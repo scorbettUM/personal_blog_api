@@ -31,6 +31,10 @@ add_executable(${PROJECT_NAME} main.cc)
 find_package(Drogon CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_FLAGS "-fcoroutines")
+
+
 # ##############################################################################
 
 if (CMAKE_CXX_STANDARD LESS 17)
@@ -44,7 +48,9 @@ else ()
     message(STATUS "use c++20")
 endif ()
 
+
 aux_source_directory(controllers CTL_SRC)
+aux_source_directory(controllers/api/v1/Posts POSTS_DIR)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
@@ -68,6 +74,7 @@ target_sources(${PROJECT_NAME}
                ${CTL_SRC}
                ${FILTER_SRC}
                ${PLUGIN_SRC}
+               ${POSTS_DIR}
                ${MODEL_SRC})
 # ##############################################################################
 # uncomment the following line for dynamically loading views 

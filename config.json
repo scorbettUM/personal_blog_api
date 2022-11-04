@@ -36,22 +36,23 @@
             ]
         }
     ],
+    */
     "db_clients": [
         {
             //name: Name of the client,'default' by default
             //"name":"",
             //rdbms: Server type, postgresql,mysql or sqlite3, "postgresql" by default
-            "rdbms": "postgresql",
+            "rdbms": "sqlite3",
             //filename: Sqlite3 db file name
-            //"filename":"",
+            "filename":"../db/blog.db",
             //host: Server address,localhost by default
-            "host": "127.0.0.1",
-            //port: Server port, 5432 by default
-            "port": 5432,
+            // "host": "127.0.0.1",
+            // //port: Server port, 5432 by default
+            // "port": 5432,
             //dbname: Database name
-            "dbname": "test",
+            "dbname": "blog",
             //user: 'postgres' by default
-            "user": "",
+            "user": "blogger",
             //passwd: '' by default
             "passwd": "",
             //is_fast: false by default, if it is true, the client is faster but user can't call
@@ -65,12 +66,13 @@
             "number_of_connections": 1,
             //timeout: -1.0 by default, in seconds, the timeout for executing a SQL query.
             //zero or negative value means no timeout.
-            "timeout": -1.0,
+            "timeout": -1.0
             //"auto_batch": this feature is only available for the PostgreSQL driver(version >= 14.0), see
             // the wiki for more details.
-            "auto_batch": false
+            // "auto_batch": false
         }
     ],
+    /*
     "redis_clients": [
         {
             //name: Name of the client,'default' by default
@@ -243,9 +245,7 @@
                     "get",
                     "post"
                 ],
-                "filters": [
-                    "FilterClassName"
-                ]
+                "filters": []
             }
         ],
         //idle_connection_timeout: Defaults to 60 seconds, the lifetime 
@@ -293,17 +293,12 @@
     "plugins": [
         {
             //name: The class name of the plugin
-            //"name": "drogon::plugin::SecureSSLRedirector",
+            "name": "db::tasks::FetchPosts",
             //dependencies: Plugins that the plugin depends on. It can be commented out
             "dependencies": [],
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
-            "config": {
-                "ssl_redirect_exempt": [
-                    ".*\\.jpg"
-                ],
-                "secure_ssl_host": "localhost:8849"
-            }
+            "config": {}
         }
     ],
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
