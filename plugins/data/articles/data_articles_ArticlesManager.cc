@@ -49,20 +49,10 @@ void ArticlesManager::initAndStart(const Json::Value &config)
     std::cout<<repo_config.repo_url<<std::endl;
     // Initialize and start the plugin
     auto git_manager = Git(repo_config);
-
-    git_manager.watch();
     
-    git_manager.checkIfValidRepository();
-
-    std::cout<<"HERE!"<<git_manager.command_status<<std::endl;
-
-    if (git_manager.command_status > 0){
-        git_manager.clone(repo_url, repo_path);
-    }
-
-    git_manager.pause();
+    git_manager.clone();
+    git_manager.wait();
     
-    // git_manager.pause();
 }
 
 
@@ -102,13 +92,11 @@ void ArticlesManager::updateArticles() const {
         repo_branch,
         repo_url
     );
+
     /// Initialize and start the plugin
-    // auto git_manager = Git(repo_config);
+    auto git_manager = Git(repo_config);
 
-    // git_manager.setRepoPath(repo_path);
-    // git_manager.setRemoteUrl(repo_url);
-
-    // git_manager.pull();
+    git_manager.pull();
 
 }
 

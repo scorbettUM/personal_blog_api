@@ -12,6 +12,7 @@ namespace manager {
         JOB_IDLE,
         JOB_RUNNING,
         JOB_COMPLETE,	
+        JOB_TERMINATED
     };
 
     enum JobTypes {

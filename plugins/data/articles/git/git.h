@@ -5,6 +5,8 @@
 #include <fstream>
 #include <cstring>
 #include <chrono>
+#include <filesystem>
+
 #include "repo_config.h"
 #include "git_job.h"
 
@@ -41,27 +43,24 @@ namespace manager {
 			bool finished;
 
 			void checkIfValidRepository();
-			void setRemoteUrl(const std::string &remote_url);
-			void setRepoPath(const std::string &repo_path);
-			void init(const std::string &repo_path);
-			void clone(const std::string &repo_url, const std::string &repo_path);
+			void init();
+			void clone();
 			void pull();
 			void checkout(std::vector<std::string> options);
 			void branch(std::vector<std::string> options);
 			void fetch();
 			void wait();
-			void watch();
-			void pause();
 			int command_status;
 			RepoConfig config;
 			
 		
 		private:
+			void setRemoteUrl(const std::string &remote_url);
+			void setRepoPath(const std::string &repo_path);
+			std::string home_path = std::filesystem::current_path();
 			RunnerStatus runner_status = RUNNER_IDLE;
-			std::thread watch_thread;
 			std::vector<std::thread> threads;
 			std::vector<GitJob> jobs;
-			std::ostringstream current_command;
 			RepoPathState path_state = REPO_NOT_SET;
 			RemoteUrlState remote_url_state = REMOTE_URL_NOT_SET;
 			void run_command();
