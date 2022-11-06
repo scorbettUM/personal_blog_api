@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(personal_blog_api CXX)
-
 include(CheckIncludeFileCXX)
+
 
 check_include_file_cxx(any HAS_ANY)
 check_include_file_cxx(string_view HAS_STRING_VIEW)
@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME} main.cc)
 find_package(Drogon CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-fcoroutines")
 
@@ -50,10 +51,16 @@ endif ()
 
 
 aux_source_directory(controllers CTL_SRC)
-aux_source_directory(controllers/api/v1/Posts POSTS_DIR)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
+aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
+aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
+aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
+aux_source_directory(plugins/data/markdown PLUGIN_DATA_MARKDOWN_SRC)
+aux_source_directory(plugins/db/tasks PLUGIN_DB_TASKS_SRC)
+aux_source_directory(plugins/global/cors PLUGIN_GLOBAL_CORS_SRC)
+
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
@@ -68,14 +75,21 @@ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                    ${CMAKE_CURRENT_SOURCE_DIR}/models)
-target_sources(${PROJECT_NAME}
-               PRIVATE
-               ${SRC_DIR}
-               ${CTL_SRC}
-               ${FILTER_SRC}
-               ${PLUGIN_SRC}
-               ${POSTS_DIR}
-               ${MODEL_SRC})
+target_sources(
+    ${PROJECT_NAME}
+    PRIVATE
+    ${SRC_DIR}
+    ${CTL_SRC}
+    ${FILTER_SRC}
+    ${PLUGIN_SRC}
+    ${MODEL_SRC}
+    ${API_V1_POSTS_SRC}
+    ${PLUGIN_DATA_ARTICLES_SRC}
+    ${PLUGIN_DATA_MARKDOWN_SRC}
+    ${PLUGIN_DB_TASKS_SRC}
+    ${PLUGIN_GLOBAL_CORS_SRC}
+    ${GIT_PLUGIN_SRC}
+)
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)

@@ -299,6 +299,27 @@
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
             "config": {}
+        },
+        {
+            //name: The class name of the plugin
+            "name": "app::global::Cors",
+            //dependencies: Plugins that the plugin depends on. It can be commented out
+            "dependencies": [],
+            //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
+            //It can be commented out
+            "config": {}
+        },
+        {
+            //name: The class name of the plugin
+            "name": "data::articles::ArticlesManager",
+            //dependencies: Plugins that the plugin depends on. It can be commented out
+            "dependencies": [],
+            //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
+            //It can be commented out
+            "config": {
+                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
+                "repo_path": "/home/sean/Documents/Projects/Blog/"
+            }
         }
     ],
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 

@@ -11,20 +11,31 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <stdio.h>
+#include <time.h>
+#include <cstdlib>
 
 using namespace drogon;
 using namespace drogon_model;
 using namespace db::tasks;
 
+std::string get_current_date() {
+    char buf[1000];
+    time_t now = time(0);
+    struct tm tm = *gmtime(&now);
+    strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+
+    return std::string(buf);
+};
+
+
+// https://
+
 
 void FetchPosts::getNewPosts(){
-    auto http_client = drogon::HttpClient::newHttpClient("https://httpbin.org");
-    auto req = drogon::HttpRequest::newHttpRequest();
-        req->setMethod(drogon::Get);
-        req->setPath("/get");
 
-    auto articles_json = req->jsonObject();
-
+    
+    
     auto db = drogon::app().getDbClient();
 
     drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
@@ -62,7 +73,7 @@ void FetchPosts::initAndStart(const Json::Value &config)
 
     db->execSqlAsync(sql, [&](const drogon::orm::Result &result) {
 
-        std::cout<<"Create or reinitialized Posts table successfully!"<<std::endl;
+        std::cout<<"Created or reinitialized Posts table successfully!"<<std::endl;
 
     }, [&](const drogon::orm::DrogonDbException &db_error) {
         const auto exception = db_error.base();
