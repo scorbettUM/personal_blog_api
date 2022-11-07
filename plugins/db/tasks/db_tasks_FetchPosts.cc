@@ -65,7 +65,7 @@ void FetchPosts::initAndStart(const Json::Value &config)
     }
 
     auto sql = "CREATE TABLE IF NOT EXISTS Posts(" \
-        "id        INT        PRIMARY KEY NOT NULL," \
+        "post_id   TEXT       PRIMARY KEY NOT NULL," \
         "name      TEXT       NOT NULL," \
         "body      TEXT       NOT NULL," \
         "created   DATETIME   DEFAULT CURRENT_TIMESTAMP," \

@@ -42,7 +42,7 @@ class Posts
   public:
     struct Cols
     {
-        static const std::string _id;
+        static const std::string _post_id;
         static const std::string _name;
         static const std::string _body;
         static const std::string _created;
@@ -53,7 +53,7 @@ class Posts
     const static std::string tableName;
     const static bool hasPrimaryKey;
     const static std::string primaryKeyName;
-    using PrimaryKeyType = uint64_t;
+    using PrimaryKeyType = std::string;
     const PrimaryKeyType &getPrimaryKey() const;
 
     /**
@@ -98,13 +98,14 @@ class Posts
                           std::string &err,
                           bool isForCreation);
 
-    /**  For column id  */
-    ///Get the value of the column id, returns the default value if the column is null
-    const uint64_t &getValueOfId() const noexcept;
+    /**  For column post_id  */
+    ///Get the value of the column post_id, returns the default value if the column is null
+    const std::string &getValueOfPostId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<uint64_t> &getId() const noexcept;
-    ///Set the value of the column id
-    void setId(const uint64_t &pId) noexcept;
+    const std::shared_ptr<std::string> &getPostId() const noexcept;
+    ///Set the value of the column post_id
+    void setPostId(const std::string &pPostId) noexcept;
+    void setPostId(std::string &&pPostId) noexcept;
 
     /**  For column name  */
     ///Get the value of the column name, returns the default value if the column is null
@@ -160,7 +161,7 @@ class Posts
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
-    std::shared_ptr<uint64_t> id_;
+    std::shared_ptr<std::string> postId_;
     std::shared_ptr<std::string> name_;
     std::shared_ptr<std::string> body_;
     std::shared_ptr<::trantor::Date> created_;
@@ -180,13 +181,13 @@ class Posts
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = ?";
+        static const std::string sql="select * from " + tableName + " where post_id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = ?";
+        static const std::string sql="delete from " + tableName + " where post_id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -196,7 +197,7 @@ class Posts
         needSelection = false;
         if(dirtyFlag_[0])
         {
-            sql += "id,";
+            sql += "post_id,";
             ++parametersCount;
         }
         if(dirtyFlag_[1])

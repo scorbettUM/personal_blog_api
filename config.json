@@ -317,6 +317,20 @@
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
             "config": {
+                "process_interval": 60,
+                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
+                "repo_path": "/home/sean/Documents/Projects/Blog/"
+            }
+        },
+        {
+            //name: The class name of the plugin
+            "name": "data::markdown::ConvertMarkdownToHTML",
+            //dependencies: Plugins that the plugin depends on. It can be commented out
+            "dependencies": [],
+            //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
+            //It can be commented out
+            "config": {
+                "process_interval": 60,
                 "repo_url": "git@github.com:scorbettUM/blog-posts.git",
                 "repo_path": "/home/sean/Documents/Projects/Blog/"
             }

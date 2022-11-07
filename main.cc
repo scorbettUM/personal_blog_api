@@ -1,19 +1,26 @@
 #include <drogon/drogon.h>
 #include <coroutine>
 #include <chrono>
+#include <unistd.h>
 #include <./plugins/db/tasks/tasks.h>
 #include <./plugins/global/cors/Cors.h>
 
 
 int main() {
+
+    auto server_port = getenv("BLOG_SERVER_PORT");
+    if (server_port == NULL){
+        server_port = (char*)"8122";
+    }
+    
     //Set HTTP listener address and port
-    drogon::app().addListener("0.0.0.0",8122);
+    std::cout<<"Server running as process: "<<getpid()<<std::endl;
+    drogon::app().addListener("0.0.0.0", std::stoi(server_port));
     //Load config file
 
     auto config_path = std::string("../config.json");
 
     drogon::app().loadConfigFile(config_path);
-   
 
     const std::vector<CORSOption> options {
         CORSOption(
@@ -37,21 +44,12 @@ int main() {
 
         auto cors_plugin = drogon::app().getPlugin<app::global::Cors>();
         cors_plugin->setHeaders(options, response);
-
         
     });
 
 
-    drogon::app().getLoop()->runEvery(
-        std::chrono::seconds(2),
-        [](){
-            
-            auto posts_plugin = drogon::app().getPlugin<db::tasks::FetchPosts>();
+    std::cout<<"Serving on port: "<<server_port<<"\n"<<std::endl;
 
-            posts_plugin->getNewPosts();
-        }
-    );
-    //Run HTTP framework,the method will block in the internal event loop
     drogon::app().run();
     return 0;
 }

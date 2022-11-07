@@ -50,8 +50,6 @@ namespace manager {
                     command_string << arg;
                 }
 
-                std::cout<<command_string.str()<<std::endl;
-
                 auto command = Command();
                 auto result = command.exec(command_string.str());
 

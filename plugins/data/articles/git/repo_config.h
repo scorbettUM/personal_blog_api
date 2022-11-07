@@ -3,7 +3,10 @@
 
 namespace manager {
     class RepoConfig {
-        public:         
+        public:    
+            RepoConfig(){
+                
+            }     
             RepoConfig(
                 std::string remote,
                 std::string path,

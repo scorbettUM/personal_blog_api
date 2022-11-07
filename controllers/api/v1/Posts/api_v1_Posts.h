@@ -22,15 +22,13 @@ class Posts : public drogon::HttpController<Posts>
     // your declaration of processing function maybe like this:
     // void get(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback, int p1, std::string p2);
     // void your_method_name(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback, double p1, int p2) const;
-   void get(
-    const HttpRequestPtr& req, 
-    std::function<void (const HttpResponsePtr &)> &&callback, 
+  Task<HttpResponsePtr> get(
+    HttpRequestPtr req, 
     std::string post_title
-  ) const;
-   void list(
-    const HttpRequestPtr& req, 
-    std::function<void (const HttpResponsePtr &)> &&callback
-  ) const;
+  );
+   Task<HttpResponsePtr> list(
+    HttpRequestPtr req
+  );
 
 };
 }

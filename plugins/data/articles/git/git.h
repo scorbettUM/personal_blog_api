@@ -35,6 +35,9 @@ namespace manager {
 	class Git {
 
 		public:
+			Git(){
+
+			}
 			Git(const RepoConfig &repo_config): config(repo_config)
 			{
 
@@ -46,12 +49,16 @@ namespace manager {
 			void init();
 			void clone();
 			void pull();
+			void runPullJob();
 			void checkout(std::vector<std::string> options);
 			void branch(std::vector<std::string> options);
 			void fetch();
 			void wait();
+			void stop();
 			int command_status;
 			RepoConfig config;
+			std::vector<std::thread> threads;
+			std::vector<GitJob> jobs;
 			
 		
 		private:
@@ -59,8 +66,6 @@ namespace manager {
 			void setRepoPath(const std::string &repo_path);
 			std::string home_path = std::filesystem::current_path();
 			RunnerStatus runner_status = RUNNER_IDLE;
-			std::vector<std::thread> threads;
-			std::vector<GitJob> jobs;
 			RepoPathState path_state = REPO_NOT_SET;
 			RemoteUrlState remote_url_state = REMOTE_URL_NOT_SET;
 			void run_command();

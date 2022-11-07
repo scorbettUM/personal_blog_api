@@ -13,17 +13,17 @@ using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::sqlite3;
 
-const std::string Posts::Cols::_id = "id";
+const std::string Posts::Cols::_post_id = "post_id";
 const std::string Posts::Cols::_name = "name";
 const std::string Posts::Cols::_body = "body";
 const std::string Posts::Cols::_created = "created";
 const std::string Posts::Cols::_updated = "updated";
-const std::string Posts::primaryKeyName = "id";
+const std::string Posts::primaryKeyName = "post_id";
 const bool Posts::hasPrimaryKey = true;
 const std::string Posts::tableName = "posts";
 
 const std::vector<typename Posts::MetaData> Posts::metaData_={
-{"id","uint64_t","int",8,0,1,1},
+{"post_id","std::string","text",0,0,1,1},
 {"name","std::string","text",0,0,0,1},
 {"body","std::string","text",0,0,0,1},
 {"created","::trantor::Date","datetime",0,0,0,0},
@@ -38,9 +38,9 @@ Posts::Posts(const Row &r, const ssize_t indexOffset) noexcept
 {
     if(indexOffset < 0)
     {
-        if(!r["id"].isNull())
+        if(!r["post_id"].isNull())
         {
-            id_=std::make_shared<uint64_t>(r["id"].as<uint64_t>());
+            postId_=std::make_shared<std::string>(r["post_id"].as<std::string>());
         }
         if(!r["name"].isNull())
         {
@@ -107,7 +107,7 @@ Posts::Posts(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 0;
         if(!r[index].isNull())
         {
-            id_=std::make_shared<uint64_t>(r[index].as<uint64_t>());
+            postId_=std::make_shared<std::string>(r[index].as<std::string>());
         }
         index = offset + 1;
         if(!r[index].isNull())
@@ -181,7 +181,7 @@ Posts::Posts(const Json::Value &pJson, const std::vector<std::string> &pMasquera
         dirtyFlag_[0] = true;
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<uint64_t>((uint64_t)pJson[pMasqueradingVector[0]].asUInt64());
+            postId_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
@@ -256,12 +256,12 @@ Posts::Posts(const Json::Value &pJson, const std::vector<std::string> &pMasquera
 
 Posts::Posts(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("post_id"))
     {
         dirtyFlag_[0]=true;
-        if(!pJson["id"].isNull())
+        if(!pJson["post_id"].isNull())
         {
-            id_=std::make_shared<uint64_t>((uint64_t)pJson["id"].asUInt64());
+            postId_=std::make_shared<std::string>(pJson["post_id"].asString());
         }
     }
     if(pJson.isMember("name"))
@@ -346,7 +346,7 @@ void Posts::updateByMasqueradedJson(const Json::Value &pJson,
     {
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
-            id_=std::make_shared<uint64_t>((uint64_t)pJson[pMasqueradingVector[0]].asUInt64());
+            postId_=std::make_shared<std::string>(pJson[pMasqueradingVector[0]].asString());
         }
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
@@ -421,11 +421,11 @@ void Posts::updateByMasqueradedJson(const Json::Value &pJson,
 
 void Posts::updateByJson(const Json::Value &pJson) noexcept(false)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("post_id"))
     {
-        if(!pJson["id"].isNull())
+        if(!pJson["post_id"].isNull())
         {
-            id_=std::make_shared<uint64_t>((uint64_t)pJson["id"].asUInt64());
+            postId_=std::make_shared<std::string>(pJson["post_id"].asString());
         }
     }
     if(pJson.isMember("name"))
@@ -498,26 +498,31 @@ void Posts::updateByJson(const Json::Value &pJson) noexcept(false)
     }
 }
 
-const uint64_t &Posts::getValueOfId() const noexcept
+const std::string &Posts::getValueOfPostId() const noexcept
 {
-    const static uint64_t defaultValue = uint64_t();
-    if(id_)
-        return *id_;
+    const static std::string defaultValue = std::string();
+    if(postId_)
+        return *postId_;
     return defaultValue;
 }
-const std::shared_ptr<uint64_t> &Posts::getId() const noexcept
+const std::shared_ptr<std::string> &Posts::getPostId() const noexcept
 {
-    return id_;
+    return postId_;
 }
-void Posts::setId(const uint64_t &pId) noexcept
+void Posts::setPostId(const std::string &pPostId) noexcept
 {
-    id_ = std::make_shared<uint64_t>(pId);
+    postId_ = std::make_shared<std::string>(pPostId);
+    dirtyFlag_[0] = true;
+}
+void Posts::setPostId(std::string &&pPostId) noexcept
+{
+    postId_ = std::make_shared<std::string>(std::move(pPostId));
     dirtyFlag_[0] = true;
 }
 const typename Posts::PrimaryKeyType & Posts::getPrimaryKey() const
 {
-    assert(id_);
-    return *id_;
+    assert(postId_);
+    return *postId_;
 }
 
 const std::string &Posts::getValueOfName() const noexcept
@@ -615,7 +620,7 @@ void Posts::updateId(const uint64_t id)
 const std::vector<std::string> &Posts::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
-        "id",
+        "post_id",
         "name",
         "body",
         "created",
@@ -628,9 +633,9 @@ void Posts::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 {
     if(dirtyFlag_[0])
     {
-        if(getId())
+        if(getPostId())
         {
-            binder << getValueOfId();
+            binder << getValueOfPostId();
         }
         else
         {
@@ -713,9 +718,9 @@ void Posts::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 {
     if(dirtyFlag_[0])
     {
-        if(getId())
+        if(getPostId())
         {
-            binder << getValueOfId();
+            binder << getValueOfPostId();
         }
         else
         {
@@ -770,13 +775,13 @@ void Posts::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 Json::Value Posts::toJson() const
 {
     Json::Value ret;
-    if(getId())
+    if(getPostId())
     {
-        ret["id"]=(Json::UInt64)getValueOfId();
+        ret["post_id"]=getValueOfPostId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["post_id"]=Json::Value();
     }
     if(getName())
     {
@@ -821,9 +826,9 @@ Json::Value Posts::toMasqueradedJson(
     {
         if(!pMasqueradingVector[0].empty())
         {
-            if(getId())
+            if(getPostId())
             {
-                ret[pMasqueradingVector[0]]=(Json::UInt64)getValueOfId();
+                ret[pMasqueradingVector[0]]=getValueOfPostId();
             }
             else
             {
@@ -877,13 +882,13 @@ Json::Value Posts::toMasqueradedJson(
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
-    if(getId())
+    if(getPostId())
     {
-        ret["id"]=(Json::UInt64)getValueOfId();
+        ret["post_id"]=getValueOfPostId();
     }
     else
     {
-        ret["id"]=Json::Value();
+        ret["post_id"]=Json::Value();
     }
     if(getName())
     {
@@ -922,14 +927,14 @@ Json::Value Posts::toMasqueradedJson(
 
 bool Posts::validateJsonForCreation(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("post_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, true))
+        if(!validJsonOfField(0, "post_id", pJson["post_id"], err, true))
             return false;
     }
     else
     {
-        err="The id column cannot be null";
+        err="The post_id column cannot be null";
         return false;
     }
     if(pJson.isMember("name"))
@@ -1039,9 +1044,9 @@ bool Posts::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 }
 bool Posts::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
 {
-    if(pJson.isMember("id"))
+    if(pJson.isMember("post_id"))
     {
-        if(!validJsonOfField(0, "id", pJson["id"], err, false))
+        if(!validJsonOfField(0, "post_id", pJson["post_id"], err, false))
             return false;
     }
     else
@@ -1133,7 +1138,7 @@ bool Posts::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isUInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
