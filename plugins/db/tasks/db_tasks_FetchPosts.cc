@@ -29,21 +29,7 @@ std::string get_current_date() {
 };
 
 
-// https://
 
-
-void FetchPosts::getNewPosts(){
-
-    
-    
-    auto db = drogon::app().getDbClient();
-
-    drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
-
-    auto response = posts_mapper.findAll();
-
-    std::cout<<"Retrieved - "<<response.size()<<" - posts."<<std::endl;
-}
 
 void FetchPosts::initAndStart(const Json::Value &config)
 {

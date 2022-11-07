@@ -317,9 +317,6 @@
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
             "config": {
-                "process_interval": 60,
-                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/home/sean/Documents/Projects/Blog/"
             }
         },
         {
@@ -330,9 +327,6 @@
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
             "config": {
-                "process_interval": 60,
-                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/home/sean/Documents/Projects/Blog/"
             }
         }
     ],

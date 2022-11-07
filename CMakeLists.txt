@@ -31,6 +31,11 @@ add_executable(${PROJECT_NAME} main.cc)
 find_package(Drogon CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
+find_package(quill REQUIRED)
+
+# Linking your project against quill
+target_link_libraries(${PROJECT_NAME} PRIVATE quill::quill)
+
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-fcoroutines")
@@ -54,8 +59,8 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
+aux_source_directory(logging LOGGING_SRC)
 aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
-aux_source_directory(controllers/views/v1/App VIEWS_V1_APP_SRC)
 aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
 aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
 aux_source_directory(plugins/data/markdown PLUGIN_DATA_MARKDOWN_SRC)
@@ -91,6 +96,7 @@ target_sources(
     ${PLUGIN_DB_TASKS_SRC}
     ${PLUGIN_GLOBAL_CORS_SRC}
     ${GIT_PLUGIN_SRC}
+    ${LOGGING_SRC}
 )
 # ##############################################################################
 # uncomment the following line for dynamically loading views 

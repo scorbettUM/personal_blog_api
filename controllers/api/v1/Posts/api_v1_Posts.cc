@@ -43,15 +43,52 @@ Task<HttpResponsePtr> Posts::list(HttpRequestPtr req) {
     drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
 
     auto sort_field = req->getOptionalParameter<std::string>("sort_by").value_or("created");
-    auto sort_order = req->getOptionalParameter<std::string>("sort_order").value_or("DESC");
-    auto limit = req->getOptionalParameter<int>("sort_order").value_or(5);
-
     
-    std::cout<<"Sorting by: "<<sort_field<<" order: "<<sort_order<<std::endl;
+    auto post_fields = drogon_model::sqlite3::Posts().toJson().getMemberNames();
+
+    if (!std::count(post_fields.begin(), post_fields.end(), sort_field)){
+        sort_field = "created";
+    }
+
+    auto posts_sort_order = req->getOptionalParameter<std::string>("sort_order").value_or("DESC");
+    auto limit = req->getOptionalParameter<int>("sort_order").value_or(5);
+    auto page = req->getOptionalParameter<int>("page").value_or(1);
+
+    if (page < 1){
+        page = 1;
+    }
+
+    if (limit < 1){
+        limit = 1;
+    }
+
+    drogon::orm::SortOrder sort_order;
+
+    if (posts_sort_order == "ASC"){
+        sort_order = drogon::orm::SortOrder::ASC;
+
+    } else {
+        sort_order = drogon::orm::SortOrder::DESC;
+    }
 
 
     try {
-        data["posts"] = posts_mapper.findFutureAll().get().data()->toJson();
+        auto posts = posts_mapper.orderBy(
+            sort_field,
+            sort_order 
+        ).paginate(
+            page,
+            limit
+        ).findFutureAll()
+            .get();
+            
+        Json::Value posts_json;
+
+        for (const auto &post : posts){
+            posts_json.append(post.toJson());
+        }
+
+        data["posts"] = posts_json;
 
         auto resp=HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(k200OK);

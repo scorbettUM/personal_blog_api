@@ -7,12 +7,18 @@
 #include "data_markdown_ConvertMarkdownToHTML.h"
 #include <drogon/drogon.h>
 #include <models/Posts.h>
+#include "logging/logger.h"
 using namespace drogon;
 using namespace drogon_model;
 using namespace data::markdown;
 
 void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 {
+
+    auto factory = utilities::logging::LoggerFactory();
+    auto logger = factory.getLogger();
+
+    /// Initialize and start the plugin
     int article_process_interval;
     auto process_interval = config["process_interval"];
     if (!process_interval){
@@ -28,32 +34,54 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
         article_process_interval = process_interval.asInt();
     }
 
-    /// Initialize and start the plugin
-    auto config_url = config["repo_url"];
-    if (!config_url){
-        throw "Err. - You must specify a repo url!";
+    auto repo_url = config["repo_url"].asString();
+    if (repo_url.size() == 0){
+
+        auto config_url_env = getenv("REPO_URL");
+        if (config_url_env == NULL){
+            
+            throw std::runtime_error("Err. - You must specify a repo url!");   
+        } else {
+            repo_url = std::string((char*)config_url_env);
+        }
+
     }
 
-    auto config_path = config["repo_path"];
-    if (!config_path){
-        throw "Err. - You must specify a repo path";
+    auto repo_path = config["repo_path"].asString();
+    if (repo_path.size() == 0){
+         auto config_path_env = getenv("REPO_PATH");
+        if (config_path_env == NULL){
+            throw std::runtime_error("Err. - You must specify a repo path!");   
+        } else {
+            repo_path = std::string((char*)config_path_env);
+        }
+
     }
 
+    auto repo_branch = config["repo_branch"].asString();
+    if (repo_branch.size() == 0){
 
-    auto config_branch = config["repo_branch"];
-    if (!config_branch){
-        config_branch = std::string("main");
+         auto config_branch_env = getenv("REPO_BRANCH");
+        if (config_branch_env == NULL){
+            repo_branch = "main";   
+        } else {
+            repo_branch = std::string((char*)config_branch_env);
+        }
+
     }
 
-    auto config_remote = config["repo_remote"];
-    if (!config_remote ){
-        config_remote = std::string("origin");
-    }
+    auto repo_remote = config["repo_remote"].asString();
+    if (repo_remote.size() ==  0){
 
-    auto repo_remote = std::string(config_remote.asCString());
-    auto repo_url = std::string(config_url.asCString());
-    auto repo_path = std::string(config_path.asCString());
-    auto repo_branch = std::string(config_branch.asCString());
+        auto config_remote_env = getenv("REPO_REMOTE");
+        if (config_remote_env == NULL){
+            repo_remote = "origin";
+               
+        } else {
+            repo_remote = std::string((char*)config_remote_env);
+        }
+
+    }
 
     repo_config = manager::RepoConfig(
         repo_remote,
