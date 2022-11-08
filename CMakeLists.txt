@@ -3,6 +3,7 @@ project(personal_blog_api CXX)
 include(CheckIncludeFileCXX)
 
 
+
 check_include_file_cxx(any HAS_ANY)
 check_include_file_cxx(string_view HAS_STRING_VIEW)
 check_include_file_cxx(coroutine HAS_COROUTINE)
@@ -38,7 +39,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE quill::quill)
 
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-fcoroutines")
+set(CMAKE_CXX_FLAGS "-fcoroutines -O3")
 
 
 # ##############################################################################
@@ -59,7 +60,6 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
-aux_source_directory(logging LOGGING_SRC)
 aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
 aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
 aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
@@ -96,7 +96,6 @@ target_sources(
     ${PLUGIN_DB_TASKS_SRC}
     ${PLUGIN_GLOBAL_CORS_SRC}
     ${GIT_PLUGIN_SRC}
-    ${LOGGING_SRC}
 )
 # ##############################################################################
 # uncomment the following line for dynamically loading views 
@@ -104,4 +103,5 @@ target_sources(
 
 # ##############################################################################
 
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 add_subdirectory(test)

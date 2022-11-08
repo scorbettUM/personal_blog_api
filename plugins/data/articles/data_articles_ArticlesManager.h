@@ -22,7 +22,7 @@ namespace articles
 class ArticlesManager : public drogon::Plugin<ArticlesManager>
 {
   public:
-    ArticlesManager(): runner(manager::Git()), git_config(manager::RepoConfig()){
+    ArticlesManager(): git_config(manager::RepoConfig()), runner(manager::Git()){
 
     }
     manager::RepoConfig git_config;

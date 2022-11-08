@@ -1,6 +1,6 @@
 /**
  *
- *  db_tasks_FetchPosts.h
+ *  db_tasks_DatabaseManager.h
  *
  */
 
@@ -12,10 +12,10 @@ namespace db
 namespace tasks
 {
 
-class FetchPosts : public drogon::Plugin<FetchPosts>
+class DatabaseManager : public drogon::Plugin<DatabaseManager>
 {
   public:
-    FetchPosts() {}
+    DatabaseManager() {}
     /// This method must be called by drogon to initialize and start the plugin.
     /// It must be implemented by the user.
     void initAndStart(const Json::Value &config) override;

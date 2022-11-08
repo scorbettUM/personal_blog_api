@@ -61,7 +61,7 @@ namespace manager {
 
                 return job_idx;
 
-            };
+            }
        
         private:
             std::ostringstream command_string;

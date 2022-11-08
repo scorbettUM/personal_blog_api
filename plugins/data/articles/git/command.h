@@ -1,5 +1,7 @@
 #include <string>
 #include <array>
+#include <iostream>
+#include <quill/Quill.h>
 
 
 namespace manager {
@@ -44,11 +46,15 @@ namespace manager {
 
             Command(
             ){
+
+                logger = quill::get_logger();
             }
 
             std::string command;
    
             CommandResult exec(const std::string &shell_command) {
+
+                LOG_DEBUG(logger,"Executing shell command: {}", shell_command);
 
                 int exitcode = 255;
                 std::array<char, 1048576> buffer {};
@@ -68,11 +74,16 @@ namespace manager {
                         result += std::string(buffer.data(), bytesread);
                     }
                 } catch (...) {
-                    exitcode = pclose(pipe);
+                    exitcode = WEXITSTATUS(pclose(pipe));
                     throw;
                 }
                 exitcode = WEXITSTATUS(pclose(pipe));
+
+                LOG_DEBUG(logger, "Command returned with exit code: {}", exitcode);
+
                 return CommandResult{result, exitcode};
             }
+        private:
+            quill::Logger *logger;
         };
 }

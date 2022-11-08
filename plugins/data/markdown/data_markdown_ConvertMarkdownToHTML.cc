@@ -7,7 +7,8 @@
 #include "data_markdown_ConvertMarkdownToHTML.h"
 #include <drogon/drogon.h>
 #include <models/Posts.h>
-#include "logging/logger.h"
+#include <quill/Quill.h>
+#include <cstdlib>
 using namespace drogon;
 using namespace drogon_model;
 using namespace data::markdown;
@@ -15,24 +16,9 @@ using namespace data::markdown;
 void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 {
 
-    auto factory = utilities::logging::LoggerFactory();
-    auto logger = factory.getLogger();
+    auto logger = quill::get_logger();
 
     /// Initialize and start the plugin
-    int article_process_interval;
-    auto process_interval = config["process_interval"];
-    if (!process_interval){
-
-        auto process_interval_env = getenv("ARTICLE_PROCESS_INTERVAL");
-        if (process_interval_env == NULL){
-            article_process_interval = 60;
-        } else {
-            article_process_interval = std::stoi((char*)process_interval_env);
-        }
-
-    } else {
-        article_process_interval = process_interval.asInt();
-    }
 
     auto repo_url = config["repo_url"].asString();
     if (repo_url.size() == 0){
@@ -83,6 +69,11 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 
     }
 
+    LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository url {}", repo_url);
+    LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository remote {}", repo_remote);
+    LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository branch {}", repo_branch);
+    LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
+
     repo_config = manager::RepoConfig(
         repo_remote,
         repo_path,
@@ -94,87 +85,112 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 
     markdown_job = std::thread([&](){
 
-        int start_offset = rand() % 4 + 5;
+        int article_process_interval = 60;
+        auto process_interval = getenv("ARTICLE_PROCESS_INTERVAL");
 
-        std::this_thread::sleep_for(
-            std::chrono::seconds(start_offset)
-        );
+        if (process_interval != NULL){
+            article_process_interval = std::stoi((char*)process_interval);
+
+        } else if (!config["process_interval"].isNull()) {
+            article_process_interval = config["process_interval"].asInt();
+        }
+
+        auto job_logger = quill::get_logger();
+
+
+        LOG_INFO(job_logger, "Started Markdown -> HTML converter job.");
+        LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Running on process: {}", getpid());
+
+        int start_offset = rand() % article_process_interval + article_process_interval;
+
+        LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Starting in: {} seconds.", start_offset);
+
+        std::unique_lock<std::mutex> lock(runner_mutex);
+        runner_conditional.wait_for(lock, std::chrono::seconds(start_offset));
+
 
         auto db = drogon::app().getDbClient();
         drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
 
         while(run_job){
 
-            auto articles_output_path = getenv("ARTICLES_OUTPUT_PATH");
-            if (articles_output_path == NULL){
-                articles_output_path = (char *)"../articles";
-            }
-      
-            std::string ext(".md");
-            
-            std::vector<std::pair<std::string, std::stringstream>> markdown_files;
-
-            for (auto &file : std::filesystem::recursive_directory_iterator(repo_config.repo_path))
-            {
-
-                std::string article_name = file.path().stem().string();
-
-                auto record_count = posts_mapper.count(
-                    drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, article_name)
-                );
-       
-                if (file.path().extension() == ext && record_count == 0){
-
-                    std::stringstream buffer;
-                    std::ifstream ifs(file.path().string());       // note no mode needed
-
-                    if ( !ifs.is_open() ) {                 
-                        std::cout <<" Failed to open article at: "<< file.path().string()<< std::endl;
-                    }
-                    else {
+            try {
+                std::string ext(".md");
                 
-                        buffer << ifs.rdbuf();
+                std::vector<std::pair<std::string, std::stringstream>> markdown_files;
 
-                        markdown_files.push_back(
-                            std::pair(
-                                file.path().stem().string(),
-                                std::move(buffer)
-                            )
-                        );
+                for (auto &file : std::filesystem::recursive_directory_iterator(repo_config.repo_path))
+                {
 
+                    std::string article_name = file.path().stem().string();
+
+                    auto record_count = posts_mapper.countFuture(
+                        drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, article_name)
+                    ).get();
+        
+                    if (file.path().extension() == ext && record_count == 0){
+
+                        std::stringstream buffer;
+                        std::ifstream ifs(file.path().string());       // note no mode needed
+
+                        if ( !ifs.is_open() ) { 
+                            LOG_WARNING(job_logger, "Markdown -> HTML converter job: Failed to open article at: {}", file.path().string());   
+
+                        }
+                        else {
+                    
+                            buffer << ifs.rdbuf();
+
+                            markdown_files.push_back(
+                                std::pair(
+                                    file.path().stem().string(),
+                                    std::move(buffer)
+                                )
+                            );
+
+                        }
                     }
                 }
-            }
 
-            std::vector<std::pair<std::string, std::string>> articles_html;
+                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", markdown_files.size());
 
-            std::shared_ptr<maddy::ParserConfig> config = std::make_shared<maddy::ParserConfig>();
-            config->isEmphasizedParserEnabled = true; // default
-            config->isHTMLWrappedInParagraph = true; // default
+                std::vector<std::pair<std::string, std::string>> articles_html;
 
-            std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>(config);
-            
-            for(std::pair<std::string, std::stringstream> &markdown_file : markdown_files){
+                std::shared_ptr<maddy::ParserConfig> config = std::make_shared<maddy::ParserConfig>();
+                config->isEmphasizedParserEnabled = true; // default
+                config->isHTMLWrappedInParagraph = true; // default
 
-                Json::Value post_data;
-                post_data["post_id"] = uuid::generate_uuid_v4();
-                post_data["name"] = markdown_file.first;
-                post_data["body"] = parser->Parse(markdown_file.second);
+                std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>(config);
+                
+                for(std::pair<std::string, std::stringstream> &markdown_file : markdown_files){
 
-                auto post =drogon_model::sqlite3::Posts(post_data);
+                    Json::Value post_data;
+                    post_data["post_id"] = uuid::generate_uuid_v4();
+                    post_data["name"] = markdown_file.first;
+                    post_data["body"] = parser->Parse(markdown_file.second);
+
+                    auto post =drogon_model::sqlite3::Posts(post_data);
 
 
-                posts_mapper.insertFuture(post);
+                    posts_mapper.insertFuture(post).get();
 
-            }
+                }
 
-            {
-                std::unique_lock<std::mutex> lock(runner_mutex);
-                runner_conditional.wait_for(lock, std::chrono::seconds(article_process_interval));
+                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Saved: {} new articles.", markdown_files.size());
+                
+                runner_conditional.wait_for(
+                    lock, 
+                    std::chrono::duration(
+                        std::chrono::seconds(article_process_interval)
+                    ),  
+                    [&](){
+                        return !run_job;
+                    }
+                );
+            } catch(...){
+                LOG_CRITICAL(job_logger, "Markdown -> HTML converter job: Encountered critical error. Restarting.");
             }
         }
-
-        return 0;
 
     });
 
@@ -184,8 +200,16 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 void ConvertMarkdownToHTML::shutdown() 
 {
     /// Shutdown the plugin
+    auto logger = quill::get_logger();
+
     run_job = false;
     runner_conditional.notify_all();
 
-    markdown_job.join();
+    LOG_INFO(logger, "Markdown -> HTML Converter job has been notified of shutdown. Please wait...");
+
+    if(markdown_job.joinable()){
+        markdown_job.join();
+    }
+
+    LOG_INFO(logger, "Markdown -> HTML Converter job has stopped.");
 }

@@ -15,7 +15,7 @@ void Git::checkIfValidRepository(){
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git -C "),
 			config.repo_path,
 			std::string(" rev-parse --is-inside-work-tree"),
@@ -64,7 +64,7 @@ void Git::init() {
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git init "),
 			config.repo_path,
 			std::string(" 2>/dev/null")
@@ -95,7 +95,7 @@ void Git::clone() {
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git clone "),
 			config.repo_url,
 			std::string(" "),
@@ -131,7 +131,7 @@ void Git::pull(){
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git pull "),
 			config.repo_remote,
 			std::string(" "),
@@ -175,7 +175,7 @@ void Git::checkout(std::vector<std::string> options){
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git checkout "),
 			command_options,
 			config.repo_branch,
@@ -218,7 +218,7 @@ void Git::branch(std::vector<std::string> options){
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git branch "),
 			command_options,
 			config.repo_branch,
@@ -250,7 +250,7 @@ void Git::fetch(){
 			jobs.size()
 		);
 
-		auto job_id = job.run(
+		job.run(
 			std::string("git fetch"),
 			std::string(" 2>/dev/null")
 		);
@@ -278,6 +278,7 @@ void Git::wait(){
 
 	if (jobs.size() > 0){
 		GitJob &job = jobs.back();
+		threads.erase(threads.begin() + job.job_idx);
 		jobs.erase(jobs.begin() + job.job_idx);
 	}
 }
@@ -288,6 +289,12 @@ void Git::stop(){
 	for (std::thread &thread : threads){
 		if(thread.joinable()){
 			thread.join();
+		}
+
+		if (jobs.size() > 0){
+			GitJob &job = jobs.back();
+			threads.erase(threads.begin() + job.job_idx);
+			jobs.erase(jobs.begin() + job.job_idx);
 		}
 
 	}
