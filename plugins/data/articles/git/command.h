@@ -1,7 +1,12 @@
 #include <string>
 #include <array>
 #include <iostream>
-#include <quill/Quill.h>
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
 
 
 namespace manager {
@@ -47,7 +52,9 @@ namespace manager {
             Command(
             ){
 
-                logger = quill::get_logger();
+                auto logger_factory = utilities::logging::LoggerFactory();
+                logger = logger_factory.createConsoleLogger("console");
+                file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
             }
 
             std::string command;
@@ -55,6 +62,7 @@ namespace manager {
             CommandResult exec(const std::string &shell_command) {
 
                 LOG_DEBUG(logger,"Executing shell command: {}", shell_command);
+                LOG_DEBUG(file_logger,"Executing shell command: {}", shell_command);
 
                 int exitcode = 255;
                 std::array<char, 1048576> buffer {};
@@ -80,10 +88,12 @@ namespace manager {
                 exitcode = WEXITSTATUS(pclose(pipe));
 
                 LOG_DEBUG(logger, "Command returned with exit code: {}", exitcode);
+                LOG_DEBUG(file_logger, "Command returned with exit code: {}", exitcode);
 
                 return CommandResult{result, exitcode};
             }
         private:
             quill::Logger *logger;
+            quill::Logger *file_logger;
         };
 }

@@ -5,10 +5,20 @@
  */
 
 #pragma once
-
 #include <drogon/plugins/Plugin.h>
 #include "CorsOptions.h"
 #include <vector>
+#include <vector>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <drogon/drogon.h>
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
 namespace app
 {
 namespace global

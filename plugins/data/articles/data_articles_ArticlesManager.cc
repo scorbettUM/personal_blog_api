@@ -13,7 +13,9 @@ using namespace manager;
 void ArticlesManager::initAndStart(const Json::Value &config)
 {
 
-    auto logger = quill::get_logger();
+    auto logger_factory = utilities::logging::LoggerFactory();
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
 
     auto repo_url = config["repo_url"].asString();
     if (repo_url.size() == 0){
@@ -68,6 +70,12 @@ void ArticlesManager::initAndStart(const Json::Value &config)
     LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository branch {}", repo_branch);
     LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
 
+
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository url {}", repo_url);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository remote {}", repo_remote);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository branch {}", repo_branch);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
+
     git_config = RepoConfig(
         repo_remote,
         repo_path,
@@ -98,12 +106,16 @@ void ArticlesManager::initAndStart(const Json::Value &config)
             article_pull_interval = config["pull_interval"].asInt();
         }
 
-
-        auto job_logger = quill::get_logger();
-
+        auto logger_factory = utilities::logging::LoggerFactory();
+        auto job_logger = logger_factory.createConsoleLogger("console");
+        auto job_file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
 
         LOG_INFO(job_logger, "Started Git -> Articles update job.");
         LOG_DEBUG(job_logger, "Git -> Articles update job: Running on process: {}", getpid());
+
+
+        LOG_INFO(job_logger, "Started Git -> Articles update job.");
+        LOG_INFO(job_file_logger, "Git -> Articles update job: Running on process: {}", getpid());
 
         std::unique_lock<std::mutex> lock(runner_mutex);
         
@@ -113,6 +125,7 @@ void ArticlesManager::initAndStart(const Json::Value &config)
                 std::vector<int> completed;
 
                 LOG_DEBUG(job_logger, "Git -> Articles update job: Polling for completed pulls.");
+                LOG_INFO(job_file_logger, "Git -> Articles update job: Polling for completed pulls.");
 
                 for (GitJob &job : runner.jobs){
                     if (job.status == JOB_COMPLETE){
@@ -129,6 +142,7 @@ void ArticlesManager::initAndStart(const Json::Value &config)
 
                 
                 LOG_DEBUG(job_logger, "Git -> Articles update job: Completed {} pulls.", completed.size());
+                LOG_INFO(job_file_logger, "Git -> Articles update job: Completed {} pulls.", completed.size());
 
                 for (const auto &completed_idx : completed){
                     runner.jobs.erase(runner.jobs.begin() + completed_idx);
@@ -138,6 +152,7 @@ void ArticlesManager::initAndStart(const Json::Value &config)
                 runner.pull();
 
                 LOG_DEBUG(job_logger, "Git -> Articles update job: Pull complete.");
+                LOG_INFO(job_file_logger, "Git -> Articles update job: Pull complete.");
 
                 {   
                     runner_conditional.wait_for(
@@ -153,6 +168,7 @@ void ArticlesManager::initAndStart(const Json::Value &config)
 
             } catch(...){
                 LOG_CRITICAL(job_logger, "Git -> Articles update job: Encountered critical error. Restarting.");
+                LOG_CRITICAL(job_file_logger, "Git -> Articles update job: Encountered critical error. Restarting.");
             }
         }
 
@@ -168,18 +184,22 @@ void ArticlesManager::initAndStart(const Json::Value &config)
 
 void ArticlesManager::shutdown() 
 {   
-    auto logger = quill::get_logger();
+    auto logger_factory = utilities::logging::LoggerFactory();
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
 
     run_job = false;
     runner_conditional.notify_all();
 
 
     LOG_INFO(logger, "Git -> Articles update job has been notified of shutdown. Please wait...");
+    LOG_INFO(file_logger, "Git -> Articles update job has been notified of shutdown. Please wait...");
 
     runner_job.join();
     runner.threads.clear();
     runner.jobs.clear();
 
     LOG_INFO(logger, "Git -> Articles update job has stopped.");
+    LOG_INFO(file_logger, "Git -> Articles update job has stopped.");
     
 }

@@ -5,10 +5,7 @@
  */
 
 #include "data_markdown_ConvertMarkdownToHTML.h"
-#include <drogon/drogon.h>
-#include <models/Posts.h>
-#include <quill/Quill.h>
-#include <cstdlib>
+
 using namespace drogon;
 using namespace drogon_model;
 using namespace data::markdown;
@@ -16,7 +13,9 @@ using namespace data::markdown;
 void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 {
 
-    auto logger = quill::get_logger();
+    auto logger_factory = utilities::logging::LoggerFactory();
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
 
     /// Initialize and start the plugin
 
@@ -74,6 +73,12 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
     LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository branch {}", repo_branch);
     LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
 
+
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository url {}", repo_url);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository remote {}", repo_remote);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository branch {}", repo_branch);
+    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
+
     repo_config = manager::RepoConfig(
         repo_remote,
         repo_path,
@@ -95,15 +100,20 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
             article_process_interval = config["process_interval"].asInt();
         }
 
-        auto job_logger = quill::get_logger();
-
+        auto logger_factory = utilities::logging::LoggerFactory();
+        auto job_logger = logger_factory.createConsoleLogger("console");
+        auto job_file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
 
         LOG_INFO(job_logger, "Started Markdown -> HTML converter job.");
         LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Running on process: {}", getpid());
 
+        LOG_INFO(job_file_logger, "Started Markdown -> HTML converter job.");
+        LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Running on process: {}", getpid());
+
         int start_offset = rand() % article_process_interval + article_process_interval;
 
         LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Starting in: {} seconds.", start_offset);
+        LOG_DEBUG(job_file_logger, "Markdown -> HTML converter job: Starting in: {} seconds.", start_offset);
 
         std::unique_lock<std::mutex> lock(runner_mutex);
         runner_conditional.wait_for(lock, std::chrono::seconds(start_offset));
@@ -134,7 +144,8 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
                         std::ifstream ifs(file.path().string());       // note no mode needed
 
                         if ( !ifs.is_open() ) { 
-                            LOG_WARNING(job_logger, "Markdown -> HTML converter job: Failed to open article at: {}", file.path().string());   
+                            LOG_WARNING(job_logger, "Markdown -> HTML converter job: Failed to open article at: {}", file.path().string());  
+                            LOG_WARNING(job_file_logger, "Markdown -> HTML converter job: Failed to open article at: {}", file.path().string());   
 
                         }
                         else {
@@ -153,6 +164,7 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
                 }
 
                 LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", markdown_files.size());
+                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", markdown_files.size());
 
                 std::vector<std::pair<std::string, std::string>> articles_html;
 
@@ -177,6 +189,7 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
                 }
 
                 LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Saved: {} new articles.", markdown_files.size());
+                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Saved: {} new articles.", markdown_files.size());
                 
                 runner_conditional.wait_for(
                     lock, 
@@ -189,6 +202,7 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
                 );
             } catch(...){
                 LOG_CRITICAL(job_logger, "Markdown -> HTML converter job: Encountered critical error. Restarting.");
+                LOG_CRITICAL(job_file_logger, "Markdown -> HTML converter job: Encountered critical error. Restarting.");
             }
         }
 
@@ -200,16 +214,20 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 void ConvertMarkdownToHTML::shutdown() 
 {
     /// Shutdown the plugin
-    auto logger = quill::get_logger();
-
+    auto logger_factory = utilities::logging::LoggerFactory();
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
+    
     run_job = false;
     runner_conditional.notify_all();
 
     LOG_INFO(logger, "Markdown -> HTML Converter job has been notified of shutdown. Please wait...");
+    LOG_INFO(file_logger, "Markdown -> HTML Converter job has been notified of shutdown. Please wait...");
 
     if(markdown_job.joinable()){
         markdown_job.join();
     }
 
     LOG_INFO(logger, "Markdown -> HTML Converter job has stopped.");
+    LOG_INFO(file_logger, "Markdown -> HTML Converter job has stopped.");
 }

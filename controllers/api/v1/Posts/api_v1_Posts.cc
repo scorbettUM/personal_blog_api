@@ -8,6 +8,8 @@ using namespace api::v1;
 
 // Add definition of your processing function here
 Task<HttpResponsePtr> Posts::get(HttpRequestPtr req, std::string post_title) {
+    
+    (void)req;
 
     Json::Value data;
     auto db = drogon::app().getDbClient();
@@ -20,6 +22,9 @@ Task<HttpResponsePtr> Posts::get(HttpRequestPtr req, std::string post_title) {
 
         auto resp = HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(drogon::k200OK);
+
+        LOG_INFO(logger, "GET - /api/v1/Posts/{} 200 OK", post_title);
+        LOG_INFO(file_logger, "GET - /api/v1/Posts/{} 200 OK", post_title);
     
         co_return resp;
 
@@ -28,6 +33,9 @@ Task<HttpResponsePtr> Posts::get(HttpRequestPtr req, std::string post_title) {
         data["post"] = "No posts found!";
         auto resp = HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(drogon::k404NotFound);
+
+        LOG_INFO(logger, "GET - /api/v1/Posts/{} 404 NOT FOUND", post_title);
+        LOG_INFO(file_logger, "GET - /api/v1/Posts/{} 404 NOT FOUND", post_title);
     
         co_return resp;
 
@@ -51,8 +59,8 @@ Task<HttpResponsePtr> Posts::list(HttpRequestPtr req) {
     }
 
     auto posts_sort_order = req->getOptionalParameter<std::string>("sort_order").value_or("DESC");
-    auto limit = req->getOptionalParameter<int>("sort_order").value_or(5);
     auto page = req->getOptionalParameter<int>("page").value_or(1);
+    auto limit = req->getOptionalParameter<int>("sort_order").value_or(5);
 
     if (page < 1){
         page = 1;
@@ -93,12 +101,48 @@ Task<HttpResponsePtr> Posts::list(HttpRequestPtr req) {
         auto resp=HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(k200OK);
 
+        LOG_INFO(
+            logger, 
+            "GET - /api/v1/Posts/lists?sort_by={}&sort_order={}&page={}&limit={} 200 OK",
+            sort_field,
+            posts_sort_order,
+            page,
+            limit
+        );
+
+        LOG_INFO(
+            file_logger, 
+            "GET - /api/v1/Posts/lists?sort_by={}&sort_order={}&page={}&limit={} 200 OK",
+            sort_field,
+            posts_sort_order,
+            page,
+            limit
+        );
+
         co_return resp;
     } catch(...) {
 
         data["posts"] = {};
         auto resp=HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(k404NotFound);
+
+        LOG_INFO(
+            logger, 
+            "GET - /api/v1/Posts/lists?sort_by={}&sort_order={}&page={}&limit={} 404 NOT FOUND",
+            sort_field,
+            posts_sort_order,
+            page,
+            limit
+        );
+
+        LOG_INFO(
+            file_logger, 
+            "GET - /api/v1/Posts/lists?sort_by={}&sort_order={}&page={}&limit={} 404 NOT FOUND",
+            sort_field,
+            posts_sort_order,
+            page,
+            limit
+        );
 
         co_return resp;
     }

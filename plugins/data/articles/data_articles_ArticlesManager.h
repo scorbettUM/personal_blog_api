@@ -14,6 +14,13 @@
 #include <condition_variable>
 #include <mutex>
 
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
+
 namespace data
 {
 namespace articles

@@ -5,16 +5,7 @@
  */
 
 #include "db_tasks_DatabaseManager.h"
-#include <drogon/drogon.h>
-#include <models/Posts.h>
-#include <stdlib.h>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <time.h>
-#include <cstdlib>
-#include <quill/Quill.h>
+
 
 using namespace drogon;
 using namespace db::tasks;
@@ -24,7 +15,9 @@ void DatabaseManager::initAndStart(const Json::Value &config)
     /// Initialize and start the plugin
     auto db = drogon::app().getDbClient();
 
-    auto logger = quill::get_logger();
+    auto logger_factory = utilities::logging::LoggerFactory();
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("database_tasks", "blog.database.tasks.log");
 
     auto api_database_path = std::string("../db/blog.db");
     auto database_path = getenv("SQLITE_DATABASE_PATH");
@@ -37,14 +30,19 @@ void DatabaseManager::initAndStart(const Json::Value &config)
     }
     
     LOG_INFO(logger, "Database Manager connecting to database at: {}", api_database_path);
+    LOG_INFO(file_logger, "Database Manager connecting to database at: {}", api_database_path);
 
     if (std::ifstream(api_database_path)){
+
         LOG_INFO(logger, "Database at: {} exists. Skipping creation.", api_database_path);
+        LOG_INFO(file_logger, "Database at: {} exists. Skipping creation.", api_database_path);
+
     } else {
         std::ofstream database_file(api_database_path);
         if (!database_file) {
 
             LOG_CRITICAL(logger, "Err. - could not create or connect database file at {}", api_database_path);
+            LOG_CRITICAL(file_logger, "Err. - could not create or connect database file at {}", api_database_path);
         }
     }
 
@@ -64,10 +62,13 @@ void DatabaseManager::initAndStart(const Json::Value &config)
         const auto exception = db_error.base();
 
         LOG_CRITICAL(logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
+        LOG_CRITICAL(file_logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
 
     });
 
     LOG_INFO(logger, "Successfully created or connected to Posts table.");
+    LOG_INFO(file_logger, "Successfully created or connected to Posts table.");
+
 }
 
 void DatabaseManager::shutdown() 

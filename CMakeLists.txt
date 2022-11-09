@@ -60,6 +60,7 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
+aux_source_directory(utilities/logging LOGGING_SRC)
 aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
 aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
 aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
@@ -96,6 +97,7 @@ target_sources(
     ${PLUGIN_DB_TASKS_SRC}
     ${PLUGIN_GLOBAL_CORS_SRC}
     ${GIT_PLUGIN_SRC}
+    ${LOGGING_SRC}
 )
 # ##############################################################################
 # uncomment the following line for dynamically loading views 

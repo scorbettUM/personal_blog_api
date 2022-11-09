@@ -5,8 +5,23 @@
  */
 
 #pragma once
-
+#include <drogon/drogon.h>
 #include <drogon/plugins/Plugin.h>
+#include <models/Posts.h>
+#include <stdlib.h>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <time.h>
+#include <cstdlib>
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
+
 namespace db
 {
 namespace tasks

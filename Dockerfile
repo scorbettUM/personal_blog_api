@@ -33,6 +33,18 @@ WORKDIR $DROGON_ROOT
 
 RUN ./build.sh
 
+ENV QUILL_ROOT="$IROOT/quill"
+
+ADD https://api.github.com/repos/odygrd/quill/git/refs/heads/master $IROOT/version.json
+RUN git clone https://github.com/odygrd/quill.git $QUILL_ROOT
+
+WORKDIR $QUILL_ROOT
+
+RUN  mkdir -p $QUILL_ROOT/build && \
+    cd $QUILL_ROOT/build && \
+    cmake .. && \
+    make install
+
 ##################################
 ARG REPO_URL
 FROM ubuntu:22.04 as drogon_build

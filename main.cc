@@ -3,51 +3,57 @@
 #include <chrono>
 #include <unistd.h>
 #include <cstdlib>
+#include <filesystem>
+
+
 #include <./plugins/db/tasks/tasks.h>
 #include <./plugins/global/cors/Cors.h>
-#include <quill/Quill.h>
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
 
 
 int main() {
-
-    quill::Config config;
-    quill::Handler* stdout_handler = quill::stdout_handler();
-    stdout_handler->set_pattern("%(ascii_time) [%(process)] [%(thread)] %(logger_name) - %(message)", // format
-                            "%Y-%m-%d %H:%M:%S.%Qms",  // timestamp format
-                            quill::Timezone::GmtTime); 
-
-    static_cast<quill::ConsoleHandler*>(stdout_handler)->enable_console_colours();
-
-    config.default_handlers.emplace_back(stdout_handler);
     
     
-    quill::configure(config);
     quill::start();
 
-    auto logger = quill::get_logger();
-    logger->set_log_level(quill::LogLevel::Info);
+
+    auto logger_factory = utilities::logging::LoggerFactory();
+
+    auto current_working_directory = std::filesystem::current_path().string();
     
+    std::stringstream config_filepath;
+    config_filepath << current_working_directory << "/config.json";
+
+    auto logger = logger_factory.createConsoleLogger("console");
+    auto file_logger = logger_factory.createFileLogger("main", "blog.main.log");
 
     LOG_DEBUG(logger, "Server running as process: {}", getpid());
+    LOG_INFO(file_logger, "Server running as process: {}", getpid());
 
     auto server_port = getenv("SERVER_PORT");
     if (server_port == NULL) {
         server_port = (char *)"8122";
     }
-
     
     drogon::app().addListener("0.0.0.0", std::stoi(server_port));
-    //Load config file
 
+    //Load config file
+    std::string api_config_path = config_filepath.str();
     auto config_path = getenv("DROGON_CONFIG_PATH");
-    if (config_path == NULL) {
-        config_path = (char *)"../config.json";
+    if (config_path) {
+        api_config_path = std::string(config_path);
     }
 
 
-    drogon::app().loadConfigFile(config_path);
+    drogon::app().loadConfigFile(api_config_path);
 
-    LOG_INFO(logger,"Config successfully loaded!");
+    LOG_INFO(logger,"Config successfully loaded from: {}", api_config_path);
+    LOG_INFO(file_logger,"Config successfully loaded from: {}", api_config_path);
 
     const std::vector<CORSOption> options {
         CORSOption(
@@ -64,7 +70,6 @@ int main() {
         )
     };
 
-
     drogon::app().registerHttpResponseCreationAdvice([&](
         const HttpResponsePtr &response
     ){
@@ -74,8 +79,8 @@ int main() {
         
     });
 
-
     LOG_INFO(logger, "Serving on port: {}\n", server_port);
+    LOG_INFO(file_logger, "Serving on port: {}\n", server_port);
 
     drogon::app().run();
     return 0;

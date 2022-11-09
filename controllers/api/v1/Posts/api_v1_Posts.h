@@ -3,6 +3,10 @@
 #include <drogon/HttpController.h>
 #include <vector>
 #include <string>
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
 
 using namespace drogon;
 
@@ -13,6 +17,13 @@ namespace v1
 class Posts : public drogon::HttpController<Posts>
 {
   public:
+    Posts(): drogon::HttpController<Posts>(){
+
+
+      logger = logger_factory.createConsoleLogger("console");
+      file_logger = logger_factory.createFileLogger("api_v1_posts", "blog.api.log");
+
+    }
     METHOD_LIST_BEGIN
     // use METHOD_ADD to add your custom processing function here;
     // METHOD_ADD(Posts::get, "/{2}/{1}", Get); // path is /api/v1/Posts/{arg2}/{arg1}
@@ -32,6 +43,11 @@ class Posts : public drogon::HttpController<Posts>
    Task<HttpResponsePtr> list(
     HttpRequestPtr req
   );
+
+  private:
+    utilities::logging::LoggerFactory logger_factory;
+    quill::Logger* logger;
+    quill::Logger* file_logger;
 
 };
 }
