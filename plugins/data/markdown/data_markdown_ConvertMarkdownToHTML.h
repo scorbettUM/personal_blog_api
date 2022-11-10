@@ -9,6 +9,8 @@
 #include <drogon/plugins/Plugin.h>
 #include <drogon/drogon.h>
 #include <models/Posts.h>
+#include <models/Tags.h>
+#include <models/Categories.h>
 #include <string>
 #include <cstdlib>
 #include <atomic>
@@ -18,11 +20,15 @@
 #include <fstream>
 #include <mutex>
 #include <stdlib.h>
+#include <map>
 #include "uuid.h"
+#include <utilities/filesystem/paths.h>
+#include <utilities/string/string_utils.h>
 
 
 #include "parser/parser.h"
 #include "../articles/git/repo_config.h"
+
 
 #ifndef LOGGER_FACTORY
 #define LOGGER_FACTORY
@@ -30,10 +36,23 @@
 #endif
 
 
+
 namespace data
 {
 namespace markdown
 {
+
+struct RawPost {
+  RawPost(): name(), data(), tags(std::vector<std::string>()), categories(std::vector<std::string>()) {}
+  RawPost(
+    std::string post_name,
+    std::string post_data
+  ): name(post_name), data(post_data), tags(std::vector<std::string>()), categories(std::vector<std::string>()) {}
+  std::string name;
+  std::string data;
+  std::vector<std::string> tags;
+  std::vector<std::string> categories;
+};
 
 class ConvertMarkdownToHTML : public drogon::Plugin<ConvertMarkdownToHTML>
 {

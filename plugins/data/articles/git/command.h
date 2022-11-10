@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <array>
 #include <iostream>
@@ -6,7 +7,6 @@
 #define LOGGER_FACTORY
 #include <utilities/logging/logger_factory.h>
 #endif
-
 
 
 namespace manager {

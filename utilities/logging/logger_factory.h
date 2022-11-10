@@ -1,9 +1,11 @@
+#pragma once
 #include <quill/Quill.h>
 #include <string>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <utilities/filesystem/paths.h>
 
 
 namespace utilities {
@@ -29,6 +31,12 @@ namespace utilities {
                     if (log_dir){
                         logs_output_directory = std::string(log_dir);
                     } 
+
+                    setenv(
+                        "BLOG_API_LOGGING_DIR",
+                        logs_output_directory.c_str(),
+                        0
+                    );
 
                 }
 
@@ -107,18 +115,7 @@ namespace utilities {
 
                     std::string logs_file_path = logs_path.str();
 
-                    std::error_code err;
-
-
-                    if (!std::filesystem::exists(logs_output_directory)){   
-                        std::filesystem::create_directories(logs_output_directory, err);
-                    }
-
-                    if (!std::filesystem::exists(logs_file_path)){
-                        auto log_file = std::ofstream(logs_file_path);
-                        log_file.close();
-                    }
-                    
+                    utilities::filesystem::create_file_at_path(logs_file_path);    
 
                     return logs_file_path;
                 }

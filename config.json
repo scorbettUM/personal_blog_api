@@ -319,7 +319,7 @@
             "config": {
                 "pull_interval": 15,
                 "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/home/sean/Documents/Projects/Blog"
+                "repo_path": "/posts"
             }
         },
         {
@@ -332,7 +332,7 @@
             "config": {
                 "process_interval": 15,
                 "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/home/sean/Documents/Projects/Blog"
+                "repo_path": "/posts"
             }
         }
     ],

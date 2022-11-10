@@ -1,4 +1,5 @@
-#include "../../../../utilities/string/string_utils.h"
+#pragma once
+#include "utilities/string/string_utils.h"
 #include <vector>
 #include <iostream>
 #include <thread>

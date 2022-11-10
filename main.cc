@@ -1,18 +1,20 @@
 #include <drogon/drogon.h>
+
+
+#ifndef LOGGER_FACTORY
+#define LOGGER_FACTORY
+#include <utilities/logging/logger_factory.h>
+#endif
+
 #include <coroutine>
 #include <chrono>
 #include <unistd.h>
 #include <cstdlib>
 #include <filesystem>
 
+#include <plugins/global/cors/Cors.h>
 
-#include <./plugins/db/tasks/tasks.h>
-#include <./plugins/global/cors/Cors.h>
 
-#ifndef LOGGER_FACTORY
-#define LOGGER_FACTORY
-#include <utilities/logging/logger_factory.h>
-#endif
 
 
 

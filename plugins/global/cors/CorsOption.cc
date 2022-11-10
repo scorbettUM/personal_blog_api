@@ -10,6 +10,6 @@
 
 std::string CORSOption::toValues() const {
 
-    return join(values, delimiter);
+    return utilities::string::join(values, delimiter);
 }
 

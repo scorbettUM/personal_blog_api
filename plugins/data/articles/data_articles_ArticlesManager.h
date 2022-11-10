@@ -5,15 +5,16 @@
  */
 
 #pragma once
-
 #include <drogon/plugins/Plugin.h>
 #include <drogon/drogon.h>
+
+
 #include "git/git.h"
 #include <atomic>
 #include <iostream>
 #include <condition_variable>
 #include <mutex>
-
+#include <utilities/filesystem/paths.h>
 
 #ifndef LOGGER_FACTORY
 #define LOGGER_FACTORY

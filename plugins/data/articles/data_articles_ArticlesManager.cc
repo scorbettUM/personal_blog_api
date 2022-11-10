@@ -33,6 +33,13 @@ void ArticlesManager::initAndStart(const Json::Value &config)
     if (repo_path.size() == 0){
          auto config_path_env = getenv("REPO_PATH");
         if (config_path_env == NULL){
+
+            auto current_working_directory = std::filesystem::current_path().string();
+            std::stringstream repo_filepath;
+            repo_filepath << current_working_directory << "/posts";
+
+            utilities::filesystem::create_file_at_path(repo_filepath.str());
+
             throw std::runtime_error("Err. - You must specify a repo path!");   
         } else {
             repo_path = std::string((char*)config_path_env);
@@ -154,22 +161,23 @@ void ArticlesManager::initAndStart(const Json::Value &config)
                 LOG_DEBUG(job_logger, "Git -> Articles update job: Pull complete.");
                 LOG_INFO(job_file_logger, "Git -> Articles update job: Pull complete.");
 
-                {   
-                    runner_conditional.wait_for(
-                        lock, 
-                        std::chrono::duration(
-                            std::chrono::seconds(article_pull_interval)
-                        ),
-                        [&](){
-                            return !run_job;
-                        }    
-                    );
-                }
-
             } catch(...){
                 LOG_CRITICAL(job_logger, "Git -> Articles update job: Encountered critical error. Restarting.");
                 LOG_CRITICAL(job_file_logger, "Git -> Articles update job: Encountered critical error. Restarting.");
             }
+
+            {   
+                runner_conditional.wait_for(
+                    lock, 
+                    std::chrono::duration(
+                        std::chrono::seconds(article_pull_interval)
+                    ),
+                    [&](){
+                        return !run_job;
+                    }    
+                );
+            }
+            
         }
 
         if(!run_job){

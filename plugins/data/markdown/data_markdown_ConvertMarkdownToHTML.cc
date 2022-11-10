@@ -36,7 +36,13 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
     if (repo_path.size() == 0){
          auto config_path_env = getenv("REPO_PATH");
         if (config_path_env == NULL){
-            throw std::runtime_error("Err. - You must specify a repo path!");   
+
+            auto current_working_directory = std::filesystem::current_path().string();
+            std::stringstream repo_filepath;
+            repo_filepath << current_working_directory << "/posts";
+
+            utilities::filesystem::create_file_at_path(repo_filepath.str());
+
         } else {
             repo_path = std::string((char*)config_path_env);
         }
@@ -121,24 +127,44 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
 
         auto db = drogon::app().getDbClient();
         drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
+        drogon::orm::Mapper<drogon_model::sqlite3::Tags> tags_mapper(db);
+        drogon::orm::Mapper<drogon_model::sqlite3::Categories> categories_mapper(db);
+
+
+
+        std::shared_ptr<maddy::ParserConfig> maddy_config = std::make_shared<maddy::ParserConfig>();
+        maddy_config->isEmphasizedParserEnabled = true; // default
+        maddy_config->isHTMLWrappedInParagraph = true; // default
+
+        std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>(maddy_config);
+
 
         while(run_job){
 
             try {
-                std::string ext(".md");
-                
-                std::vector<std::pair<std::string, std::stringstream>> markdown_files;
 
+                std::string md_post_ext(".post.md");
+                std::string html_post_ext(".post.html");
+                    
+                std::map<std::string, RawPost> posts;
+                std::vector<std::string> post_names;
                 for (auto &file : std::filesystem::recursive_directory_iterator(repo_config.repo_path))
                 {
+                    
+                    std::string file_type = file.path().extension();
+                    std::string stub = file.path().stem().string();
+                    std::string name = std::filesystem::path(stub).stem().string();
 
-                    std::string article_name = file.path().stem().string();
+
+                    auto post_id = uuid::generate_uuid_v4();
 
                     auto record_count = posts_mapper.countFuture(
-                        drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, article_name)
+                        drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, name)
                     ).get();
+
+                    auto filename = file.path().filename().string();
         
-                    if (file.path().extension() == ext && record_count == 0){
+                    if ((filename.find(md_post_ext) != std::string::npos || filename.find(html_post_ext) != std::string::npos) && record_count == 0){
 
                         std::stringstream buffer;
                         std::ifstream ifs(file.path().string());       // note no mode needed
@@ -152,58 +178,150 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
                     
                             buffer << ifs.rdbuf();
 
-                            markdown_files.push_back(
-                                std::pair(
-                                    file.path().stem().string(),
-                                    std::move(buffer)
-                                )
-                            );
+                            std::string post_body;
 
+                            if (file_type == ".md"){
+                                post_body = parser->Parse(buffer);
+                            }  else {
+                                post_body = buffer.str();
+                            }
+
+
+                            Json::Value post_data;
+                            post_data["post_id"] = post_id;
+                            post_data["name"] = name;
+                            post_data["body"] = post_body;
+                            
+                            auto post = drogon_model::sqlite3::Posts(post_data);
+                            posts_mapper.insertFuture(post).get();
+
+                            ifs.close();
+                            
                         }
                     }
-                }
 
-                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", markdown_files.size());
-                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", markdown_files.size());
+                    if (filename.find(md_post_ext) != std::string::npos || filename.find(html_post_ext) != std::string::npos){
 
-                std::vector<std::pair<std::string, std::string>> articles_html;
+                        std::string post_directory = file.path().parent_path();
+                        std::string tags_ext(".tags.csv");
+                        std::string categories_ext(".categories.csv");
+                        
+                        for (auto &metadata_file : std::filesystem::recursive_directory_iterator(post_directory))
+                        {
+                            std::string metadata_filename = metadata_file.path().filename().string();
 
-                std::shared_ptr<maddy::ParserConfig> config = std::make_shared<maddy::ParserConfig>();
-                config->isEmphasizedParserEnabled = true; // default
-                config->isHTMLWrappedInParagraph = true; // default
-
-                std::shared_ptr<maddy::Parser> parser = std::make_shared<maddy::Parser>(config);
                 
-                for(std::pair<std::string, std::stringstream> &markdown_file : markdown_files){
+                            if (metadata_filename.find(tags_ext)  != std::string::npos){
 
-                    Json::Value post_data;
-                    post_data["post_id"] = uuid::generate_uuid_v4();
-                    post_data["name"] = markdown_file.first;
-                    post_data["body"] = parser->Parse(markdown_file.second);
+                                std::stringstream buffer;
+                                std::ifstream ifs(metadata_file.path().string());       // note no mode needed
 
-                    auto post =drogon_model::sqlite3::Posts(post_data);
+                                if ( !ifs.is_open() ) { 
+                                    LOG_WARNING(job_logger, "Markdown -> HTML converter job: Failed to open tags file at: {}", metadata_file.path().string());  
+                                    LOG_WARNING(job_file_logger, "Markdown -> HTML converter job: Failed to open tags file at: {}", metadata_file.path().string());   
+
+                                }
+                                else {
+                                    buffer << ifs.rdbuf();
+
+                                    for (const auto &tag : utilities::string::split(buffer.str(), ',')){
+
+                                        auto record_count = tags_mapper.countFuture(
+                                            drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, tag) &&
+                                            drogon::orm::Criteria("post", drogon::orm::CompareOperator::EQ, name)
+                                        ).get();
+
+                                        if (record_count == 0){
+                                            
+                                            Json::Value tag_data;
+                                            tag_data["tag_id"] = uuid::generate_uuid_v4();
+                                            tag_data["name"] = tag;
+                                            tag_data["post"] = post_id;
+                                    
+                                            auto tag = drogon_model::sqlite3::Tags(tag_data);
+                                            tags_mapper.insertFuture(tag).get();
+
+                                        }
+
+                                    }
+
+                                    ifs.close();
+
+                                }
+
+                                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new tags.", posts[name].tags.size());
+                                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Discovered: {} new tags.", posts[name].tags.size());
 
 
-                    posts_mapper.insertFuture(post).get();
+                            }
 
-                }
+                            if (metadata_filename.find(categories_ext)  != std::string::npos){
 
-                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Saved: {} new articles.", markdown_files.size());
-                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Saved: {} new articles.", markdown_files.size());
-                
-                runner_conditional.wait_for(
-                    lock, 
-                    std::chrono::duration(
-                        std::chrono::seconds(article_process_interval)
-                    ),  
-                    [&](){
-                        return !run_job;
+                                std::stringstream buffer;
+                                std::ifstream ifs(metadata_file.path().string());       // note no mode needed
+
+                                if ( !ifs.is_open() ) { 
+                                    LOG_WARNING(job_logger, "Markdown -> HTML converter job: Failed to open categories file at: {}", metadata_file.path().string());  
+                                    LOG_WARNING(job_file_logger, "Markdown -> HTML converter job: Failed to open categories file at: {}", metadata_file.path().string());   
+
+                                }
+                                else {
+
+                                    buffer << ifs.rdbuf();
+
+                                    for (const auto &category : utilities::string::split(buffer.str(), ',')){
+                                        
+                                        auto record_count = categories_mapper.countFuture(
+                                            drogon::orm::Criteria("name", drogon::orm::CompareOperator::EQ, category) &&
+                                            drogon::orm::Criteria("post", drogon::orm::CompareOperator::EQ, name)
+                                        ).get();
+
+                                        if (record_count == 0){
+
+                                            Json::Value category_data;
+                                            category_data["category_id"] = uuid::generate_uuid_v4();
+                                            category_data["name"] = category;
+                                            category_data["post"] = post_id;
+
+                                            auto category = drogon_model::sqlite3::Categories(category_data);
+                                            categories_mapper.insertFuture(category).get();
+
+                                        }
+
+                                    }
+
+                                    ifs.close();
+
+                                }
+
+                                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new categories.", posts[name].categories.size());
+                                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Discovered: {} new categories.", posts[name].categories.size());
+
+                            }
+
+                        }
+                        
                     }
-                );
+                }
+
+                LOG_DEBUG(job_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", post_names.size());
+                LOG_INFO(job_file_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", post_names.size());
+                
+                
             } catch(...){
                 LOG_CRITICAL(job_logger, "Markdown -> HTML converter job: Encountered critical error. Restarting.");
                 LOG_CRITICAL(job_file_logger, "Markdown -> HTML converter job: Encountered critical error. Restarting.");
             }
+
+            runner_conditional.wait_for(
+                lock, 
+                std::chrono::duration(
+                    std::chrono::seconds(article_process_interval)
+                ),  
+                [&](){
+                    return !run_job;
+                }
+            );
         }
 
     });

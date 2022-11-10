@@ -157,7 +157,7 @@ void Git::checkout(std::vector<std::string> options){
 
 	std::string command_options;
 	if (options.size() > 0){
-		command_options = join(options, " ");
+		command_options = utilities::string::join(options, " ");
 
 	} else {
 		command_options = "";
@@ -200,7 +200,7 @@ void Git::branch(std::vector<std::string> options){
 
 	std::string command_options;
 	if (options.size() > 0){
-		command_options = join(options, " ");
+		command_options = utilities::string::join(options, " ");
 
 	} else {
 		command_options = "";

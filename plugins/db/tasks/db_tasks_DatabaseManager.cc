@@ -19,7 +19,12 @@ void DatabaseManager::initAndStart(const Json::Value &config)
     auto logger = logger_factory.createConsoleLogger("console");
     auto file_logger = logger_factory.createFileLogger("database_tasks", "blog.database.tasks.log");
 
-    auto api_database_path = std::string("../db/blog.db");
+
+    auto current_working_directory = std::filesystem::current_path().string();
+    std::stringstream database_filepath;
+    database_filepath << current_working_directory << "/db/blog.db";
+
+    auto api_database_path = database_filepath.str();
     auto database_path = getenv("SQLITE_DATABASE_PATH");
     if (database_path != NULL) {
         api_database_path = std::string(database_path);
@@ -28,6 +33,8 @@ void DatabaseManager::initAndStart(const Json::Value &config)
         api_database_path = config["database_path"].asString();
 
     }
+
+    utilities::filesystem::create_file_at_path(api_database_path);
     
     LOG_INFO(logger, "Database Manager connecting to database at: {}", api_database_path);
     LOG_INFO(file_logger, "Database Manager connecting to database at: {}", api_database_path);
@@ -46,28 +53,28 @@ void DatabaseManager::initAndStart(const Json::Value &config)
         }
     }
 
-    auto sql = "CREATE TABLE IF NOT EXISTS Posts(" \
-        "post_id   TEXT       PRIMARY KEY NOT NULL," \
-        "name      TEXT       NOT NULL," \
-        "body      TEXT       NOT NULL," \
-        "created   DATETIME   DEFAULT CURRENT_TIMESTAMP," \
-        "updated   DATETIME   DEFAULT CURRENT_TIMESTAMP);"; 
+    TableTypes app_tables;
 
-    db->execSqlAsync(sql, [&](const drogon::orm::Result &result) {
+    for (const auto &table : app_tables.tables){
 
-        assert(result.size() == 0);
+        db->execSqlAsync(table.second, [&](const drogon::orm::Result &result) {
+
+            assert(result.size() == 0);
 
 
-    }, [&](const drogon::orm::DrogonDbException &db_error) {
-        const auto exception = db_error.base();
+        }, [&](const drogon::orm::DrogonDbException &db_error) {
+            const auto exception = db_error.base();
 
-        LOG_CRITICAL(logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
-        LOG_CRITICAL(file_logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
+            LOG_CRITICAL(logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
+            LOG_CRITICAL(file_logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
 
-    });
+        });
 
-    LOG_INFO(logger, "Successfully created or connected to Posts table.");
-    LOG_INFO(file_logger, "Successfully created or connected to Posts table.");
+        LOG_INFO(logger, "Successfully created or connected to {} table.", table.first);
+        LOG_INFO(file_logger, "Successfully created or connected to {} table.", table.first);
+    }
+    
+
 
 }
 
