@@ -6,23 +6,24 @@
 #include <utilities/logging/logger_factory.h>
 #endif
 
+
 #include <coroutine>
 #include <chrono>
 #include <unistd.h>
 #include <cstdlib>
 #include <filesystem>
-
 #include <plugins/global/cors/Cors.h>
 
-
-
+#ifndef CACHE
+#define CACHE
+#include "utilities/storage/quick_store.h"
+#endif
 
 
 int main() {
     
     
     quill::start();
-
 
     auto logger_factory = utilities::logging::LoggerFactory();
 
