@@ -1,6 +1,6 @@
 /* This is a JSON format configuration file
  */
-{
+ {
     /*
     //ssl:The global SSL settings. "key" and "cert" are the path to the SSL key and certificate. While
     //    "conf" is an array of 1 or 2-element tuples that supplies file style options for `SSL_CONF_cmd`.
@@ -311,28 +311,16 @@
         },
         {
             //name: The class name of the plugin
-            "name": "data::articles::ArticlesManager",
+            "name": "task::TaskManager",
             //dependencies: Plugins that the plugin depends on. It can be commented out
             "dependencies": [],
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
             //It can be commented out
             "config": {
-                "pull_interval": 15,
-                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/posts"
-            }
-        },
-        {
-            //name: The class name of the plugin
-            "name": "data::markdown::ConvertMarkdownToHTML",
-            //dependencies: Plugins that the plugin depends on. It can be commented out
-            "dependencies": [],
-            //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
-            //It can be commented out
-            "config": {
-                "process_interval": 15,
-                "repo_url": "git@github.com:scorbettUM/blog-posts.git",
-                "repo_path": "/posts"
+                "process_interval": 20,
+                "initialize_repo": {
+                    "repo_url": "git@github.com:scorbettUM/blog-posts.git"
+                }
             }
         }
     ],

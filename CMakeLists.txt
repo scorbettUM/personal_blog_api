@@ -38,7 +38,7 @@ find_package(quill REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE quill::quill)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-fcoroutines -O3")
+set(CMAKE_CXX_FLAGS "-fcoroutines -O3 -std=c++20")
 
 # ##############################################################################
 
@@ -62,11 +62,13 @@ aux_source_directory(utilities/logging UTILS_LOGGING_SRC)
 aux_source_directory(utilities/filesystem UTILS_FILESYSTEM_SRC)
 aux_source_directory(utilities/storage UTILS_STORAGE_SRC)
 aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
-aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
-aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
+# aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
+# aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
 aux_source_directory(plugins/data/markdown PLUGIN_DATA_MARKDOWN_SRC)
 aux_source_directory(plugins/db/tasks PLUGIN_DB_TASKS_SRC)
 aux_source_directory(plugins/global/cors PLUGIN_GLOBAL_CORS_SRC)
+aux_source_directory(plugins/tasks PLUGIN_TASKS_SRC)
+aux_source_directory(plugins/tasks/types/post PLUGIN_POST_TASKS_SRC)
 
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
@@ -92,14 +94,17 @@ target_sources(
     ${MODEL_SRC}
     ${API_V1_POSTS_SRC}
     ${VIEWS_V1_APP_SRC}
-    ${PLUGIN_DATA_ARTICLES_SRC}
+    # ${PLUGIN_DATA_ARTICLES_SRC}
     ${PLUGIN_DATA_MARKDOWN_SRC}
     ${PLUGIN_DB_TASKS_SRC}
     ${PLUGIN_GLOBAL_CORS_SRC}
-    ${GIT_PLUGIN_SRC}
+    # ${GIT_PLUGIN_SRC}
     ${UTILS_LOGGING_SRC}
     ${UTILS_FILESYSTEM_SRC}
     ${UTILS_STORAGE_SRC}
+    ${PLUGIN_TASKS_SRC}
+    ${PLUGIN_POST_TASKS_SRC}
+
 )
 # ##############################################################################
 # uncomment the following line for dynamically loading views 

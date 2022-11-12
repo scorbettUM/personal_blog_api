@@ -4,21 +4,18 @@
  *
  */
 
-#include "data_markdown_ConvertMarkdownToHTML.h"
+#include "PostTask.h"
 
 using namespace drogon;
 using namespace drogon_model;
-using namespace data::markdown;
-
-void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
-{
+using namespace task::types;
 
 
-    logger_factory = utilities::logging::LoggerFactory();
+void PostTask::initialize(Json::Value config) {
     logger = logger_factory.createConsoleLogger("console");
     file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
 
-    cache = utilities::cache::QuickStore<std::string, std::pair<data::markdown::CacheAction, std::string>>(100);
+    cache = utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>>(100);
 
 
     db = drogon::app().getDbClient();
@@ -34,90 +31,74 @@ void ConvertMarkdownToHTML::initAndStart(const Json::Value &config)
     parser = std::make_shared<maddy::Parser>(maddy_config);
     posts_mapper = drogon::orm::Mapper<drogon_model::sqlite3::Posts>(db);
 
-    repo_path = config["repo_path"].asString();
-    if (repo_path.size() == 0){
-         auto config_path_env = getenv("REPO_PATH");
-        if (config_path_env == NULL){
+    auto process_interval = getenv("ARTICLE_PROCESS_INTERVAL");
 
-            auto current_working_directory = std::filesystem::current_path().string();
-            std::stringstream repo_filepath;
-            repo_filepath << current_working_directory << "/posts";
+    if (process_interval != NULL){
+        article_process_interval = std::stoi((char*)process_interval);
 
-            utilities::filesystem::create_file_at_path(repo_filepath.str());
-
-        } else {
-            repo_path = std::string((char*)config_path_env);
-        }
-
+    } else if (!config["process_interval"].isNull()) {
+        article_process_interval = config["process_interval"].asInt();
     }
 
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Targeting repository path {}", repo_path);
+    repo_path = config["repo_path"].asString();
+    auto env_repo_path = getenv("REPO_PATH");
 
-    run_job = true;
+    if (repo_path.size() == 0 && !env_repo_path){
 
-    markdown_job = std::thread([&](){
+        auto current_working_directory = std::filesystem::current_path().string();
+        std::stringstream repo_filepath;
+        repo_filepath << current_working_directory << "/posts";
+        repo_path = repo_filepath.str();
+        
+        auto repo_directory = std::filesystem::path(repo_path);
 
-        int article_process_interval = 60;
-        auto process_interval = getenv("ARTICLE_PROCESS_INTERVAL");
-
-        if (process_interval != NULL){
-            article_process_interval = std::stoi((char*)process_interval);
-
-        } else if (!config["process_interval"].isNull()) {
-            article_process_interval = config["process_interval"].asInt();
+        if (!std::filesystem::exists(repo_directory)){
+            std::filesystem::create_directory(repo_directory);
         }
 
-        LOG_INFO(logger, "Started Markdown -> HTML converter job.");
-        LOG_DEBUG(file_logger, "Markdown -> HTML converter job: Running on process: {}", getpid());
+    } else if (repo_path.size() == 0 && env_repo_path != NULL) {
 
-        LOG_INFO(logger, "Started Markdown -> HTML converter job.");
-        LOG_INFO(file_logger, "Markdown -> HTML converter job: Running on process: {}", getpid());
+        repo_path = env_repo_path;
 
-        int start_offset = rand() % article_process_interval + article_process_interval;
+    }
 
-        LOG_DEBUG(logger, "Markdown -> HTML converter job: Starting in: {} seconds.", start_offset);
-        LOG_DEBUG(file_logger, "Markdown -> HTML converter job: Starting in: {} seconds.", start_offset);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Targeting repository path {}", repo_path);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Targeting repository path {}", repo_path);
 
-        std::unique_lock<std::mutex> lock(runner_mutex);
-        runner_conditional.wait_for(lock, std::chrono::seconds(start_offset));
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Watching {}", repo_path);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Watching {}", repo_path);
 
 
-        while(run_job){
+    LOG_INFO(logger, "Started Markdown -> HTML converter task.");
+    LOG_INFO(file_logger, "Started Markdown -> HTML converter task.");
 
-            try {
+}
 
-                findPosts(repo_path);
-                loadPosts();
-                savePosts();
-                findTagsAndCategories();
-                loadTagsAndCategories();
-                saveTags();
-                saveCategories();
-                
-            } catch(std::exception &e){
-                LOG_CRITICAL(logger, "Markdown -> HTML converter job: Encountered critical error: {}. Restarting.", e.what());
-                LOG_CRITICAL(file_logger, "Markdown -> HTML converter job: Encountered critical error: {}. Restarting.", e.what());
-            }
+void PostTask::run(){
 
-            runner_conditional.wait_for(
-                lock, 
-                std::chrono::duration(
-                    std::chrono::seconds(article_process_interval)
-                ),  
-                [&](){
-                    return !run_job;
-                }
-            );
-        }
 
-    });
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Running on process: {}", getpid());
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Running on process: {}", getpid());
+
+     try {
+        findPosts(repo_path);
+        loadPosts();
+        savePosts();
+        findTagsAndCategories();
+        loadTagsAndCategories();
+        saveTags();
+        saveCategories();
+        
+    } catch(std::exception &e){
+        LOG_CRITICAL(logger, "Markdown -> HTML converter task: Encountered critical error: {}. Restarting.", e.what());
+        LOG_CRITICAL(file_logger, "Markdown -> HTML converter task: Encountered critical error: {}. Restarting.", e.what());
+    }
 
 }
 
 
-void ConvertMarkdownToHTML::findPosts(const std::string &repo_path){
+void PostTask::findPosts(const std::string &repo_path){
 
     std::string md_post_ext(".post.md");
     std::string html_post_ext(".post.html");
@@ -151,7 +132,7 @@ void ConvertMarkdownToHTML::findPosts(const std::string &repo_path){
                 cache.store(
                     filepath,
                     std::pair(
-                        CacheAction::LOAD_POST,
+                        PostAction::LOAD_POST,
                         filepath
                     )
                 );
@@ -167,13 +148,13 @@ void ConvertMarkdownToHTML::findPosts(const std::string &repo_path){
 
     }
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Discovered: {} new articles.", discovered_articles);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Discovered: {} new articles.", discovered_articles);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Discovered: {} new articles.", discovered_articles);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Discovered: {} new articles.", discovered_articles);
 
 }
 
 
-void ConvertMarkdownToHTML::loadPosts(){
+void PostTask::loadPosts(){
 
     int cache_idx = 0;
     int loaded_count = 0;
@@ -181,7 +162,7 @@ void ConvertMarkdownToHTML::loadPosts(){
 
         auto cache_item = cache.get(filepath).value();
 
-        if (cache_item.first == CacheAction::LOAD_POST){
+        if (cache_item.first == PostAction::LOAD_POST){
             std::stringstream buffer;
             std::ifstream ifs(filepath);
             std::string post_body;
@@ -190,8 +171,8 @@ void ConvertMarkdownToHTML::loadPosts(){
             std::string file_type = path.extension();
 
             if ( !ifs.is_open() ) { 
-                LOG_WARNING(logger, "Markdown -> HTML converter job: Failed to open article at: {}", filepath);  
-                LOG_WARNING(file_logger, "Markdown -> HTML converter job: Failed to open article at: {}", filepath);   
+                LOG_WARNING(logger, "Markdown -> HTML converter task: Failed to open article at: {}", filepath);  
+                LOG_WARNING(file_logger, "Markdown -> HTML converter task: Failed to open article at: {}", filepath);   
 
             }
             else {
@@ -213,7 +194,7 @@ void ConvertMarkdownToHTML::loadPosts(){
             cache.store(
                 filepath,
                 std::pair(
-                    CacheAction::SAVE_POST,
+                    PostAction::SAVE_POST,
                     post_body
                 )
             );
@@ -227,13 +208,13 @@ void ConvertMarkdownToHTML::loadPosts(){
     }
 
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Loaded: {} new articles.", loaded_count);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Loaded: {} new articles.", loaded_count);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Loaded: {} new articles.", loaded_count);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Loaded: {} new articles.", loaded_count);
 
 }
 
 
-void ConvertMarkdownToHTML::savePosts(){
+void PostTask::savePosts(){
 
     int save_count = 0;
     int cache_idx = 0;
@@ -241,7 +222,7 @@ void ConvertMarkdownToHTML::savePosts(){
 
         auto cache_item = cache.get(filepath).value();
 
-        if (cache_item.first == CacheAction::SAVE_POST){
+        if (cache_item.first == PostAction::SAVE_POST){
 
             std::string post_body = cache_item.second;
 
@@ -264,7 +245,7 @@ void ConvertMarkdownToHTML::savePosts(){
             cache.store(
                 filepath,
                 std::pair(
-                    CacheAction::PROCESSED_POST,
+                    PostAction::PROCESSED_POST,
                     post_id
                 )
             );
@@ -275,13 +256,13 @@ void ConvertMarkdownToHTML::savePosts(){
         
     }
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Saved: {} new articles.", save_count);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Saved: {} new articles.", save_count); 
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Saved: {} new articles.", save_count);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Saved: {} new articles.", save_count); 
 
 }
 
 
-void ConvertMarkdownToHTML::findTagsAndCategories(){
+void PostTask::findTagsAndCategories(){
 
     auto tags_ext = std::string(".tags.csv");
     auto categories_ext = std::string(".categories.csv");
@@ -292,7 +273,7 @@ void ConvertMarkdownToHTML::findTagsAndCategories(){
 
         auto cache_item = cache.get(filepath).value();
 
-        if (cache_item.first == CacheAction::PROCESSED_POST){
+        if (cache_item.first == PostAction::PROCESSED_POST){
 
             std::string post_directory = std::filesystem::path(filepath).parent_path();
 
@@ -320,7 +301,7 @@ void ConvertMarkdownToHTML::findTagsAndCategories(){
                 utilities::cache::StoreResult result = cache.store(
                     tags_filepath, 
                     std::pair(
-                        CacheAction::LOAD_METADATA,
+                        PostAction::LOAD_METADATA,
                         post_directory.second
                     )
                 );
@@ -333,13 +314,13 @@ void ConvertMarkdownToHTML::findTagsAndCategories(){
 
     }
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Discovered: {} new metadata files.", metadata_files_discovered);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Discovered: {} new metadata files.", metadata_files_discovered);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Discovered: {} new metadata files.", metadata_files_discovered);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Discovered: {} new metadata files.", metadata_files_discovered);
     
 }
 
 
-void ConvertMarkdownToHTML::loadTagsAndCategories(){
+void PostTask::loadTagsAndCategories(){
 
 
     auto tags_ext = std::string(".tags.csv");
@@ -355,16 +336,16 @@ void ConvertMarkdownToHTML::loadTagsAndCategories(){
         auto metadata_filename = std::filesystem::path(filepath).filename().string();
 
 
-        auto cache_action = metadata_filename.find(tags_ext) != std::string::npos ? CacheAction::SAVE_TAGS : CacheAction::SAVE_CATEGORIES;
+        auto cache_action = metadata_filename.find(tags_ext) != std::string::npos ? PostAction::SAVE_TAGS : PostAction::SAVE_CATEGORIES;
 
-        if (cache_item.first == CacheAction::LOAD_METADATA){
+        if (cache_item.first == PostAction::LOAD_METADATA){
 
             std::stringstream buffer;
             std::ifstream ifs(filepath);       // note no mode needed
 
             if ( !ifs.is_open() ) { 
-                LOG_WARNING(logger, "Markdown -> HTML converter job: Failed to open tags file at: {}", filepath);  
-                LOG_WARNING(file_logger, "Markdown -> HTML converter job: Failed to open tags file at: {}", filepath);   
+                LOG_WARNING(logger, "Markdown -> HTML converter task: Failed to open tags file at: {}", filepath);  
+                LOG_WARNING(file_logger, "Markdown -> HTML converter task: Failed to open tags file at: {}", filepath);   
 
             }
             else {
@@ -393,13 +374,13 @@ void ConvertMarkdownToHTML::loadTagsAndCategories(){
     }
 
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Loaded: {} new metadata files.", metadata_files_loaded);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Loaded: {} new metadata files.", metadata_files_loaded);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Loaded: {} new metadata files.", metadata_files_loaded);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Loaded: {} new metadata files.", metadata_files_loaded);
 
 }
 
 
-void ConvertMarkdownToHTML::saveTags(){
+void PostTask::saveTags(){
 
     int cache_idx = 0;
     int tags_saved = 0;
@@ -407,7 +388,7 @@ void ConvertMarkdownToHTML::saveTags(){
     for (const auto &metadata_content : cache.iter()){
 
         auto cache_item = cache.get(metadata_content).value();
-        if (cache_item.first == CacheAction::SAVE_TAGS){
+        if (cache_item.first == PostAction::SAVE_TAGS){
 
             for (const auto &metadata_item : utilities::string::split(metadata_content, ',')){
 
@@ -434,7 +415,7 @@ void ConvertMarkdownToHTML::saveTags(){
                 cache.store(
                     metadata_item,
                     std::pair(
-                        CacheAction::PROCESSED_TAGS,
+                        PostAction::PROCESSED_TAGS,
                         std::string("OK")
                     )
                 );
@@ -446,13 +427,13 @@ void ConvertMarkdownToHTML::saveTags(){
         cache_idx += 1;
     }
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Saved: {} new tags.", tags_saved);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Saved: {} new tags.", tags_saved);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Saved: {} new tags.", tags_saved);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Saved: {} new tags.", tags_saved);
 
 }
 
 
-void ConvertMarkdownToHTML::saveCategories(){
+void PostTask::saveCategories(){
 
     int cache_idx = 0;
     int categories_saved = 0;
@@ -460,7 +441,7 @@ void ConvertMarkdownToHTML::saveCategories(){
     for (const auto &metadata_content : cache.iter()){
 
         auto cache_item = cache.get(metadata_content).value();
-        if (cache_item.first == CacheAction::SAVE_CATEGORIES){
+        if (cache_item.first == PostAction::SAVE_CATEGORIES){
 
             for (const auto &metadata_item : utilities::string::split(metadata_content, ',')){
 
@@ -487,7 +468,7 @@ void ConvertMarkdownToHTML::saveCategories(){
                 cache.store(
                     metadata_item,
                     std::pair(
-                        CacheAction::PROCESSED_CATEGORIES,
+                        PostAction::PROCESSED_CATEGORIES,
                         std::string("OK")
                     )
                 );
@@ -501,28 +482,20 @@ void ConvertMarkdownToHTML::saveCategories(){
 
     }
 
-    LOG_DEBUG(logger, "Markdown -> HTML converter job: Saves: {} new categories.", categories_saved);
-    LOG_INFO(file_logger, "Markdown -> HTML converter job: Saved: {} new categories.", categories_saved);
+    LOG_DEBUG(logger, "Markdown -> HTML converter task: Saved: {} new categories.", categories_saved);
+    LOG_INFO(file_logger, "Markdown -> HTML converter task: Saved: {} new categories.", categories_saved);
 
 }
 
 
-void ConvertMarkdownToHTML::shutdown(){
-    /// Shutdown the plugin
-    auto logger_factory = utilities::logging::LoggerFactory();
-    auto logger = logger_factory.createConsoleLogger("console");
-    auto file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
-    
-    run_job = false;
-    runner_conditional.notify_all();
+void PostTask::stop(){
+    LOG_INFO(logger, "Markdown -> HTML Converter task has been notified of shutdown. Please wait...");
+    LOG_INFO(file_logger, "Markdown -> HTML Converter task has been notified of shutdown. Please wait...");
 
-    LOG_INFO(logger, "Markdown -> HTML Converter job has been notified of shutdown. Please wait...");
-    LOG_INFO(file_logger, "Markdown -> HTML Converter job has been notified of shutdown. Please wait...");
+}
 
-    if(markdown_job.joinable()){
-        markdown_job.join();
-    }
 
-    LOG_INFO(logger, "Markdown -> HTML Converter job has stopped.");
-    LOG_INFO(file_logger, "Markdown -> HTML Converter job has stopped.");
+void PostTask::complete(){
+    LOG_INFO(logger, "Markdown -> HTML Converter task has completed.");
+    LOG_INFO(file_logger, "Markdown -> HTML Converter task has completed.");
 }

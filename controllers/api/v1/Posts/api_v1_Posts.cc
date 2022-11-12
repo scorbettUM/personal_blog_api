@@ -170,8 +170,6 @@ Task<HttpResponsePtr> Posts::list(HttpRequestPtr req) {
                     )
                 );
 
-                std::cout<<tags.size()<<std::endl;
-
                 for (const auto &tag : tags){
                     post_json["tags"].append(tag.toJson());
                 }
