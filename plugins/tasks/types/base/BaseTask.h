@@ -2,12 +2,13 @@
 
 #include <string>
 #include <drogon/drogon.h>
-#include <quill/Quill.h>
 
 #ifndef LOGGER_FACTORY
 #define LOGGER_FACTORY
 #include <utilities/logging/logger_factory.h>
 #endif
+
+
 
 namespace task {
     namespace types {
@@ -27,7 +28,7 @@ namespace task {
             protected:
                 BaseTask(
                     std::string name,
-                    int id
+                    int id=0
                 ){
                     task_name = name;
                     task_id = id;

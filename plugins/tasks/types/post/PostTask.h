@@ -23,6 +23,11 @@
 
 #include "parser/parser.h"
 
+#ifndef SUBSCRIBABLE
+#define SUBSCRIBABLE
+#include <plugins/tasks/types/base/Subscribable.h>
+#endif
+
 
 #ifndef BASE_TASK
 #define BASE_TASK
@@ -30,7 +35,7 @@
 #endif
 
 
-
+using namespace messaging::pubsub;
 
 namespace task {
 
@@ -54,12 +59,11 @@ namespace task {
             CATEGORIES,
         };
 
-        class PostTask : public BaseTask  {
+        class PostTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 PostTask():
-                    BaseTask(
-                        "markdown_to_html",
-                        0
+                    Subscribable(
+                        "markdown_to_html"
                     ),
                     db(),
                     posts_mapper(db),
@@ -77,6 +81,13 @@ namespace task {
                 /// It must be implemented by the user.
                 void stop() override;
                 void complete() override;
+                void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
+                    std::cout<<key<<" "<<value.first<<value.second<<std::endl;
+                    cache.store(
+                        key,
+                        value
+                    );
+                }
 
             private:
                 int article_process_interval = 60;

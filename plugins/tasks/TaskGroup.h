@@ -3,30 +3,13 @@
 #include <atomic>
 #include <string>
 #include <condition_variable>
-#include <filesystem>
-#include <deque>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <map>
-#include <variant>
 #include <quill/Quill.h>
-
-#ifndef LOGGER_FACTORY
-#define LOGGER_FACTORY
-#include <utilities/logging/logger_factory.h>
-#endif
-
-#ifndef BASE_TASK
-#define BASE_TASK
 #include <plugins/tasks/types/base/BaseTask.h>
-#endif
 
 
-template<class V>
-std::type_info const& var_type(V const& v){
-  return std::visit( [](auto&&x)->decltype(auto){ return typeid(x); }, v );
-}
 
 namespace task {
 
@@ -52,15 +35,17 @@ namespace task {
 
             }
 
-            void addTask(std::shared_ptr<task::types::BaseTask> task){
+            template<typename T> void addTask(T task){
 
-                if (config[task->task_name].empty()){
-                    config[task->task_name] = Json::Value();
+                if (config[task.task_name].empty()){
+                    config[task.task_name] = Json::Value();
                 }
 
-                task->task_id = task_idx;
+                task.task_id = task_idx;
                 tasks.push_back(
-                    std::move(task)
+                    std::move(
+                        std::make_shared<T>(task)
+                    )
                 );
 
                 task_idx += 1;
@@ -152,11 +137,7 @@ namespace task {
             std::atomic_bool run_tasks;
             std::condition_variable runner_conditional;
             std::mutex runner_mutex;
-
-            utilities::logging::LoggerFactory logger_factory;
-            quill::Logger *logger;
-            quill::Logger *file_logger;
-            std::vector<std::thread> threads;
             std::vector<std::shared_ptr<task::types::BaseTask>> tasks;
+            std::vector<std::thread> threads;
     };
 }

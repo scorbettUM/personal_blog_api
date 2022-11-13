@@ -21,8 +21,8 @@
 #include <utilities/logging/logger_factory.h>
 #endif
 
-#ifndef BASE_TASK
-#define BASE_TASK
+#ifndef SUBSCRIBABLE
+#define SUBSCRIBABLE
 #include <plugins/tasks/types/base/BaseTask.h>
 #endif
 
@@ -35,15 +35,10 @@
 namespace task {
     namespace types {
 
-        class PullUpdates : public BaseTask  {
+        class PullUpdates :  public BaseTask {
             public:
 
-                PullUpdates(): 
-                    BaseTask(
-                        "initialize_repo",
-                        0
-                    )
-                {
+                PullUpdates(): BaseTask("pull_updates") {
 
                 }
 
@@ -143,7 +138,8 @@ namespace task {
                     LOG_INFO(file_logger, "Started Git -> Articles update task.");
 
                 };
-                
+
+      
                 void run() {
 
                     LOG_DEBUG(logger, "Git -> Articles update task: Running on process: {}", getpid());

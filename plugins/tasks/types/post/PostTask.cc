@@ -10,7 +10,6 @@ using namespace drogon;
 using namespace drogon_model;
 using namespace task::types;
 
-
 void PostTask::initialize(Json::Value config) {
     logger = logger_factory.createConsoleLogger("console");
     file_logger = logger_factory.createFileLogger("markdown_job", "blog.markdown.job.log");
@@ -72,6 +71,14 @@ void PostTask::initialize(Json::Value config) {
 
     LOG_INFO(logger, "Started Markdown -> HTML converter task.");
     LOG_INFO(file_logger, "Started Markdown -> HTML converter task.");
+
+    send(
+        std::string("Hello"),
+        std::pair(
+            PostAction::DISCOVER_POST,
+            std::string("!")
+        )
+    );
 
 }
 

@@ -16,13 +16,13 @@ void TaskManager::initAndStart(const Json::Value &config)
 
     task_group.parseConfig(config);
 
-    task_group.addTask(
-        std::make_shared<PullUpdates>(PullUpdates())
-    );
+    task_group.addTask(PullUpdates());
 
-    task_group.addTask(
-        std::make_shared<PostTask>(PostTask())
-    );
+    auto pull_task = PostTask();
+
+    pull_task.subscribe(pull_task);
+
+    task_group.addTask(pull_task);
 
     task_group.runStaggered();
 }
