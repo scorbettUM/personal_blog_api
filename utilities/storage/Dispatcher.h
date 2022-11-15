@@ -19,14 +19,13 @@ namespace messaging {
                 }
 
                 template<typename T>void subscribe(T subscriber){
-                    subscribers.push_back(
-                        std::move(
-                            std::make_shared<T>(subscriber)
-                        )
-                    );
+                    subscribers.push_back(subscriber);
                 }
 
-                template<typename ValueType> void send(KeyType key, ValueType value){
+                template<typename ValueType, typename... Args> void send(
+                    KeyType key, 
+                    ValueType value
+                ){
 
                     for (std::shared_ptr<Subscriber> &subscriber: subscribers){
                         subscriber->receive(key, value);

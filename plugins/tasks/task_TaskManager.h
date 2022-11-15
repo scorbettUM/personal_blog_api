@@ -7,14 +7,16 @@
 #pragma once
 
 #include <drogon/plugins/Plugin.h>
-#include "types/post/PostTask.h"
+#include "types/post/FindPostsTask.h"
+#include "types/post/LoadPostsTask.h"
+#include "types/post/SavePostsTask.h"
+#include "types/post/FindMetadataTask.h"
+#include "types/post/LoadMetadataTask.h"
+#include "types/post/SaveTagsTask.h"
+#include "types/post/SaveCategoriesTask.h"
 #include "types/repo/PullUpdates.h"
 #include "TaskGroup.h"
 
-#ifndef BASE_TASK
-#define BASE_TASK
-#include <plugins/tasks/types/base/Task.h>
-#endif
 
 namespace task
 {
@@ -32,7 +34,8 @@ class TaskManager : public drogon::Plugin<TaskManager>
     void shutdown() override;
 
   private:
-    task::TaskGroup task_group;
+    task::TaskGroup<task::types::BaseTask> task_group;
+    std::vector<std::shared_ptr<task::types::BaseTask>> tasks;
 };
 
 }

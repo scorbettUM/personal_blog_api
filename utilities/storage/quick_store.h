@@ -32,22 +32,26 @@ namespace utilities {
                     auto index_val = index(key);
 
                     if (index_val > -1){
-                        keys[index_val] = key;
-                        values[index_val] = value;
+                        keys[index_val] = std::move(key);
+                        values[index_val] = std::move(value);
 
                         return StoreResult::CACHE_ITEM_UPDATED;
 
                     } else {
 
                          if (current_item_idx >= current_allocations){
-                            keys.push_back(key);
-                            values.push_back(value);
+                            keys.push_back(
+                                std::move(key)
+                            );
+                            values.push_back(
+                                std::move(value)
+                            );
 
                             current_allocations += 1;
 
                         } else {
-                            keys[current_item_idx] = key;
-                            values[current_item_idx] = value;
+                            keys[current_item_idx] = std::move(key);
+                            values[current_item_idx] = std::move(value);
 
                         }
 
@@ -94,6 +98,20 @@ namespace utilities {
 
                      return std::nullopt;
 
+                }
+
+                void remove(K key){
+                    int idx = 0;
+                    for (const auto &cache_key : keys){
+                        if (cache_key == key){
+                            break;
+                        }
+
+                        idx += 1;
+                    }
+
+                    keys.erase(keys.begin() + idx, keys.begin() + idx + 1);
+                    values.erase(values.begin() + idx, values.begin() + idx + 1);
                 }
 
                 std::pair<K, T> last(){

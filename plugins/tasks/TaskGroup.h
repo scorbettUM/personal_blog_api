@@ -7,19 +7,27 @@
 #include <thread>
 #include <vector>
 #include <quill/Quill.h>
-#include <plugins/tasks/types/base/BaseTask.h>
+
+#ifndef POSTS_COMMON
+#define POSTS_COMMON
+#include "types/PostAction.h"
+#include <plugins/tasks/types/base/Subscribable.h>
+#endif
 
 
 
 namespace task {
 
+    template<typename GroupType>
     class TaskGroup {
 
         public:
             TaskGroup(
             )
             {
-                
+
+                logger = logger_factory.createConsoleLogger("console");
+                file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
 
             }
 
@@ -37,16 +45,12 @@ namespace task {
 
             template<typename T> void addTask(T task){
 
-                if (config[task.task_name].empty()){
-                    config[task.task_name] = Json::Value();
+                if (config[task->task_name].empty()){
+                    config[task->task_name] = Json::Value();
                 }
 
-                task.task_id = task_idx;
-                tasks.push_back(
-                    std::move(
-                        std::make_shared<T>(task)
-                    )
-                );
+                task->task_id = task_idx;
+                tasks.push_back(task);
 
                 task_idx += 1;
             }
@@ -83,7 +87,6 @@ namespace task {
         
 
                         while (run_tasks){
-                            
 
                             group_task->run();
                 
@@ -114,6 +117,10 @@ namespace task {
             }
 
             void stop(){
+                
+
+                LOG_INFO(logger, "Task Group has been notified of shutdown. Please wait...");
+                LOG_INFO(file_logger, "Task Group has been notified of shutdown. Please wait...");
 
                 run_tasks = false;
                 runner_conditional.notify_all();
@@ -127,6 +134,9 @@ namespace task {
 
                 threads.erase(threads.begin(), threads.end());
                 tasks.erase(tasks.begin(), tasks.end());
+
+                LOG_INFO(logger, "Task Group has completed.");
+                LOG_INFO(file_logger, "Task Group has completed.");
                 
             }
 
@@ -137,7 +147,10 @@ namespace task {
             std::atomic_bool run_tasks;
             std::condition_variable runner_conditional;
             std::mutex runner_mutex;
-            std::vector<std::shared_ptr<task::types::BaseTask>> tasks;
+            std::vector<std::shared_ptr<GroupType>> tasks;
             std::vector<std::thread> threads;
+            utilities::logging::LoggerFactory logger_factory;
+            quill::Logger *logger;
+            quill::Logger *file_logger;
     };
 }

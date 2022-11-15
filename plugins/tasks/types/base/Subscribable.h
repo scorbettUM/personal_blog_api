@@ -1,4 +1,4 @@
-#include "SubscribableTask.h"
+#include "Receivable.h"
 #include <utilities/storage/Dispatcher.h>
 
 
@@ -9,12 +9,12 @@ namespace task {
     namespace types {
 
         template<typename KeyType, typename ValueType>
-        class Subscribable : public SubscribableTask<KeyType, ValueType>, public Dispatcher<SubscribableTask<KeyType, ValueType>, KeyType> {
+        class Subscribable : public Receivable<KeyType, ValueType>, public Dispatcher<Receivable<KeyType, ValueType>, KeyType> {
  
             protected:
                 Subscribable(
                     std::string name
-                ): SubscribableTask<KeyType, ValueType>(name)
+                ): Receivable<KeyType, ValueType>(name)
                 {
 
                 }

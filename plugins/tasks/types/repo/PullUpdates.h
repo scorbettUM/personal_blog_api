@@ -21,8 +21,8 @@
 #include <utilities/logging/logger_factory.h>
 #endif
 
-#ifndef SUBSCRIBABLE
-#define SUBSCRIBABLE
+#ifndef PUBSUB
+#define PUBSUB
 #include <plugins/tasks/types/base/BaseTask.h>
 #endif
 

@@ -6,10 +6,10 @@ using namespace messaging::pubsub;
 namespace task {
     namespace types {
         template<typename KeyType, typename ValueType>
-        class SubscribableTask: public BaseTask, public Receiver<KeyType, ValueType>{
+        class Receivable: public BaseTask, public Receiver<KeyType, ValueType>{
 
             protected:
-                SubscribableTask(
+                Receivable(
                     std::string name
                 )
                 : BaseTask(name)
