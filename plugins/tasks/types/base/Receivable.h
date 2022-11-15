@@ -10,9 +10,16 @@ namespace task {
 
             protected:
                 Receivable(
-                    std::string name
+                    std::string name,
+                    int order=0,
+                    std::vector<std::string> task_dependencies=std::vector<std::string>()
                 )
-                : BaseTask(name)
+                : BaseTask(
+                    name,
+                    0,
+                    order,
+                    task_dependencies
+                )
                 {}
 
         };

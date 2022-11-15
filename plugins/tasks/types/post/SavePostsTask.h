@@ -35,8 +35,13 @@ namespace task {
         class SavePostsTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 SavePostsTask():
-                    Subscribable(
-                        "save_posts"
+                    Subscribable<std::string, std::pair<task::types::PostAction, std::string>>(
+                        "save_posts",
+                        100,
+                        3,
+                        std::vector<std::string>{
+                            "find_metadata"
+                        }
                     ),
                     posts_mapper(drogon::app().getDbClient())
                 {
@@ -45,8 +50,11 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("save_posts", "blog.jobs.log");
+
+                    LOG_DEBUG(task_logger, "Initializing {} task. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "Initializing {} task. Please wait...", task_name);
 
                 };
                 void run(){
@@ -54,7 +62,7 @@ namespace task {
                     int cache_idx = 0;
                     std::vector<std::string> processed;
 
-                    for (const auto &filepath : cache.iter()){
+                    for (std::string &filepath : cache.iter()){
 
                         auto cache_item = cache.get(filepath).value();
 
@@ -99,8 +107,8 @@ namespace task {
                         cache.remove(filepath);
                     }
 
-                    LOG_DEBUG(logger, "Markdown -> HTML converter task: Saved: {} new articles.", save_count);
-                    LOG_INFO(file_logger, "Markdown -> HTML converter task: Saved: {} new articles.", save_count); 
+                    LOG_DEBUG(task_logger, "{} task: Saved: {} new articles.", task_name, save_count);
+                    LOG_INFO(task_file_logger, "{} task: Saved: {} new articles.", task_name, save_count); 
 
                     save_count = 0;
 
@@ -108,8 +116,14 @@ namespace task {
 
                 void stop(){
 
+                    LOG_DEBUG(task_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+
                 };
                 void complete(){
+
+                    LOG_DEBUG(task_logger, "{} task has completed.", task_name);
+                    LOG_INFO(task_file_logger, "{} task has completed.", task_name);
 
                 };
                 void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
@@ -126,6 +140,9 @@ namespace task {
                 
                 drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }

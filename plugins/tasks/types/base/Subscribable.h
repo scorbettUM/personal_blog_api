@@ -13,8 +13,19 @@ namespace task {
  
             protected:
                 Subscribable(
-                    std::string name
-                ): Receivable<KeyType, ValueType>(name)
+                    std::string name,
+                    int pool_size=100,
+                    int task_order=0,
+                    std::vector<std::string> subscription_targets=std::vector<std::string>()
+                ): 
+                    Receivable<KeyType, ValueType>(
+                        name,
+                        task_order,
+                        subscription_targets
+                    ),
+                    Dispatcher<Receivable<KeyType, ValueType>, KeyType>(
+                        pool_size
+                    )
                 {
 
                 }

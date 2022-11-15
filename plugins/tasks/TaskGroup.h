@@ -7,11 +7,12 @@
 #include <thread>
 #include <vector>
 #include <quill/Quill.h>
+#include "TaskRegistry.h"
 
 #ifndef POSTS_COMMON
 #define POSTS_COMMON
 #include "types/PostAction.h"
-#include <plugins/tasks/types/base/Subscribable.h>
+#include <plugins/tasks/types/base/BaseTask.h>
 #endif
 
 
@@ -27,7 +28,7 @@ namespace task {
             {
 
                 logger = logger_factory.createConsoleLogger("console");
-                file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                file_logger = logger_factory.createFileLogger("markdown_job", "blog.jobs.log");
 
             }
 
@@ -84,11 +85,21 @@ namespace task {
                         }
                         group_task->initialize(task_config);
 
+                        LOG_INFO(logger, "Started {} task.", group_task->task_name);
+                        LOG_INFO(file_logger, "Started {} update task.", group_task->task_name);
         
-
                         while (run_tasks){
-
-                            group_task->run();
+                            
+                            try
+                            { 
+                                group_task->run();
+                            }
+                            catch(const std::exception& e)
+                            {
+                                LOG_CRITICAL(logger, "Encountered error running task {} - {}", group_task->task_name, e.what());
+                                LOG_CRITICAL(file_logger, "Encountered error running task {} - {}", group_task->task_name, e.what());
+                            }
+                            
                 
 
                             runner_conditional.wait_for(
@@ -102,7 +113,6 @@ namespace task {
                             );
 
                         }
-
                         
                         group_task->stop();
                         group_task->complete();

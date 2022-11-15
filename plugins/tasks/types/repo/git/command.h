@@ -56,7 +56,7 @@ namespace task {
 
                     auto logger_factory = utilities::logging::LoggerFactory();
                     logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
+                    file_logger = logger_factory.createFileLogger("articles_job", "blog.jobs.log");
                 }
 
                 std::string command;

@@ -9,9 +9,9 @@ namespace messaging {
 
             public:
                 Dispatcher(
-                    int size=100
+                    int initial_list_size=100
                 ){
-                    subscribers.reserve(size * 2);
+                    subscribers.reserve(initial_list_size * 2);
                 }
 
                 std::vector<std::shared_ptr<Subscriber>> subscribed(){

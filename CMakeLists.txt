@@ -62,9 +62,8 @@ aux_source_directory(utilities/logging UTILS_LOGGING_SRC)
 aux_source_directory(utilities/filesystem UTILS_FILESYSTEM_SRC)
 aux_source_directory(utilities/storage UTILS_STORAGE_SRC)
 aux_source_directory(controllers/api/v1/Posts API_V1_POSTS_SRC)
-# aux_source_directory(plugins/data/articles PLUGIN_DATA_ARTICLES_SRC)
-# aux_source_directory(plugins/data/articles/git GIT_PLUGIN_SRC)
-aux_source_directory(plugins/data/markdown PLUGIN_DATA_MARKDOWN_SRC)
+aux_source_directory(controllers/api/v1/Tags API_V1_TAGS_SRC)
+aux_source_directory(controllers/api/v1/Categories API_V1_CATEGORIES_SRC)
 aux_source_directory(plugins/db/tasks PLUGIN_DB_TASKS_SRC)
 aux_source_directory(plugins/global/cors PLUGIN_GLOBAL_CORS_SRC)
 aux_source_directory(plugins/tasks PLUGIN_TASKS_SRC)
@@ -93,12 +92,11 @@ target_sources(
     ${PLUGIN_SRC}
     ${MODEL_SRC}
     ${API_V1_POSTS_SRC}
+    ${API_V1_TAGS_SRC}
+    ${API_V1_CATEGORIES_SRC}
     ${VIEWS_V1_APP_SRC}
-    # ${PLUGIN_DATA_ARTICLES_SRC}
-    ${PLUGIN_DATA_MARKDOWN_SRC}
     ${PLUGIN_DB_TASKS_SRC}
     ${PLUGIN_GLOBAL_CORS_SRC}
-    # ${GIT_PLUGIN_SRC}
     ${UTILS_LOGGING_SRC}
     ${UTILS_FILESYSTEM_SRC}
     ${UTILS_STORAGE_SRC}

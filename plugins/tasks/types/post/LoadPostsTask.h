@@ -34,8 +34,13 @@ namespace task {
         class LoadPostsTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 LoadPostsTask():
-                    Subscribable(
-                        "load_posts"
+                    Subscribable<std::string, std::pair<task::types::PostAction, std::string>>(
+                        "load_posts",
+                        100,
+                        2,
+                        std::vector<std::string>{
+                            "save_posts"
+                        }
                     ),
                     maddy_config(std::make_shared<maddy::ParserConfig>()),
                     parser(std::make_shared<maddy::Parser>(maddy_config))
@@ -45,8 +50,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("load_posts", "blog.jobs.log");
 
                     maddy_config = std::make_shared<maddy::ParserConfig>();
                     maddy_config->isEmphasizedParserEnabled = true; // default
@@ -54,13 +59,16 @@ namespace task {
 
                     parser = std::make_shared<maddy::Parser>(maddy_config);
 
+                    LOG_DEBUG(task_logger, "Initializing {} task. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "Initializing {} task. Please wait...", task_name);
+                    
                 };
                 void run(){
 
                     int cache_idx = 0;
                     std::vector<std::string> processed;
 
-                    for (const auto &filepath: cache.iter()){
+                    for (std::string &filepath: cache.iter()){
 
                         auto cache_item = cache.get(filepath).value();
 
@@ -72,9 +80,14 @@ namespace task {
                             auto path = std::filesystem::path(filepath);
                             std::string file_type = path.extension();
 
+                            std::cout<<filepath<<std::endl;
+
                             if ( !ifs.is_open() ) { 
-                                LOG_WARNING(logger, "Markdown -> HTML converter task: Failed to open article at: {}", filepath);  
-                                LOG_WARNING(file_logger, "Markdown -> HTML converter task: Failed to open article at: {}", filepath);   
+
+                                error_filepath = path.string();
+
+                                LOG_WARNING(task_logger, "{} task: Failed to open article at: {}", task_name, error_filepath);  
+                                LOG_WARNING(task_file_logger, "{} task: Failed to open article at: {}", task_name, error_filepath);   
 
                             }
                             else {
@@ -116,8 +129,8 @@ namespace task {
                     }
 
 
-                    LOG_DEBUG(logger, "Markdown -> HTML converter task: Loaded: {} new articles.", loaded_count);
-                    LOG_INFO(file_logger, "Markdown -> HTML converter task: Loaded: {} new articles.", loaded_count);
+                    LOG_DEBUG(task_logger, "{} task: Loaded: {} new articles.", task_name, loaded_count);
+                    LOG_INFO(task_file_logger, "{} task: Loaded: {} new articles.", task_name, loaded_count);
 
                     loaded_count = 0;
 
@@ -125,8 +138,14 @@ namespace task {
 
                 void stop(){
 
+                    LOG_DEBUG(task_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+
                 };
                 void complete(){
+
+                    LOG_DEBUG(task_logger, "{} task has completed.", task_name);
+                    LOG_INFO(task_file_logger, "{} task has completed.", task_name);
 
                 };
                 void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
@@ -142,9 +161,13 @@ namespace task {
                 int article_process_interval = 60;
                 int loaded_count = 0;
                 std::string repo_path;
+                std::string error_filepath;
                 std::shared_ptr<maddy::ParserConfig> maddy_config;
                 std::shared_ptr<maddy::Parser> parser;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }

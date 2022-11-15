@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <fstream>
 #include <stdlib.h>
+#include <vector>
+#include <string>
 #include <map>
 #include <drogon/drogon.h>
 #include <models/Posts.h>
@@ -36,8 +38,13 @@ namespace task {
         class FindMetadataTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 FindMetadataTask():
-                    Subscribable(
-                        "find_metadata"
+                    Subscribable<std::string, std::pair<task::types::PostAction, std::string>>(
+                        "find_metadata",
+                        100,
+                        4,
+                        std::vector<std::string>{
+                            "load_metadata"
+                        }
                     )
                 {
 
@@ -45,8 +52,11 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("find_metadata", "blog.jobs.log");
+
+                    LOG_DEBUG(task_logger, "Initializing {} task. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "Initializing {} task. Please wait...", task_name);
 
                 };
                 
@@ -118,16 +128,23 @@ namespace task {
                         cache.remove(metadata_filepath);
                     }
 
-                    LOG_DEBUG(logger, "Markdown -> HTML converter task: Discovered: {} new metadata files.", metadata_files_discovered);
-                    LOG_INFO(file_logger, "Markdown -> HTML converter task: Discovered: {} new metadata files.", metadata_files_discovered);
+                    LOG_DEBUG(task_logger, "{} task: Discovered: {} new metadata files.", task_name, metadata_files_discovered);
+                    LOG_INFO(task_file_logger, "{} task: Discovered: {} new metadata files.", task_name, metadata_files_discovered);
+
                     metadata_files_discovered = 0; 
 
                 };
 
                 void stop(){
 
+                    LOG_DEBUG(task_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+
                 };
                 void complete(){
+
+                    LOG_DEBUG(task_logger, "{} task has completed.", task_name);
+                    LOG_INFO(task_file_logger, "{} task has completed.", task_name);
 
                 };
                 void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
@@ -140,6 +157,9 @@ namespace task {
             private:
                 int metadata_files_discovered = 0; 
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }

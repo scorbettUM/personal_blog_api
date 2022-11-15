@@ -22,7 +22,6 @@ class Posts : public drogon::HttpController<Posts>
   public:
     Posts(): drogon::HttpController<Posts>(){
 
-
       logger = logger_factory.createConsoleLogger("console");
       file_logger = logger_factory.createFileLogger("api_v1_posts", "blog.api.log");
 
@@ -34,7 +33,10 @@ class Posts : public drogon::HttpController<Posts>
     // ADD_METHOD_TO(Posts::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
 
     METHOD_ADD(Posts::get, "/{1}", Get, Head, Options);
+    METHOD_ADD(Posts::getByTags, "/tags/{1}", Get, Head, Options);
+    METHOD_ADD(Posts::getByCategories, "/categories/{1}", Get, Head, Options);
     METHOD_ADD(Posts::list, "/list", Get, Head, Options);
+    METHOD_ADD(Posts::listTitles, "/titles", Get, Head, Options);
     METHOD_LIST_END
     // your declaration of processing function maybe like this:
     // void get(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback, int p1, std::string p2);
@@ -43,7 +45,22 @@ class Posts : public drogon::HttpController<Posts>
     HttpRequestPtr req, 
     std::string post_title
   );
-   Task<HttpResponsePtr> list(
+
+  Task<HttpResponsePtr> getByTags(
+    HttpRequestPtr req,
+    std::string tags
+  );
+
+  Task<HttpResponsePtr> getByCategories(
+    HttpRequestPtr req,
+    std::string categories
+  );
+  
+  Task<HttpResponsePtr> list(
+    HttpRequestPtr req
+  );
+
+  Task<HttpResponsePtr> listTitles(
     HttpRequestPtr req
   );
 

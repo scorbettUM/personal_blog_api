@@ -44,8 +44,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("articles_job", "blog.articles.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("articles_job", "blog.jobs.log");
 
                     auto repo_url = config["repo_url"].asString();
                     if (repo_url.size() == 0){
@@ -105,16 +105,16 @@ namespace task {
 
                     }
 
-                    LOG_DEBUG(logger, "Git -> Articles update job: Targeting repository url {}", repo_url);
-                    LOG_DEBUG(logger, "Git -> Articles update job: Targeting repository remote {}", repo_remote);
-                    LOG_DEBUG(logger, "Git -> Articles update job: Targeting repository branch {}", repo_branch);
-                    LOG_DEBUG(logger, "Git -> Articles update job: Targeting repository path {}", repo_path);
+                    LOG_DEBUG(task_logger, "{} task: Targeting repository url {}", task_name, repo_url);
+                    LOG_DEBUG(task_logger, "{} task: Targeting repository remote {}", task_name, repo_remote);
+                    LOG_DEBUG(task_logger, "{} task: Targeting repository branch {}", task_name, repo_branch);
+                    LOG_DEBUG(task_logger, "{} task: Targeting repository path {}", task_name, repo_path);
 
 
-                    LOG_INFO(file_logger, "Git -> Articles update job: Targeting repository url {}", repo_url);
-                    LOG_INFO(file_logger, "Git -> Articles update job: Targeting repository remote {}", repo_remote);
-                    LOG_INFO(file_logger, "Git -> Articles update job: Targeting repository branch {}", repo_branch);
-                    LOG_INFO(file_logger, "Git -> Articles update job: Targeting repository path {}", repo_path);
+                    LOG_INFO(task_file_logger, "{} task: Targeting repository url {}", task_name, repo_url);
+                    LOG_INFO(task_file_logger, "{} task: Targeting repository remote {}", task_name, repo_remote);
+                    LOG_INFO(task_file_logger, "{} task: Targeting repository branch {}", task_name, repo_branch);
+                    LOG_INFO(task_file_logger, "{} task: Targeting repository path {}", task_name, repo_path);
 
                     repo_config = RepoConfig(
                         repo_remote,
@@ -132,18 +132,13 @@ namespace task {
                         git.checkout();
                     }
 
-
-
-                    LOG_INFO(logger, "Started Git -> Articles update task.");
-                    LOG_INFO(file_logger, "Started Git -> Articles update task.");
-
                 };
 
       
                 void run() {
 
-                    LOG_DEBUG(logger, "Git -> Articles update task: Running on process: {}", getpid());
-                    LOG_INFO(file_logger, "Git -> Articles update task: Running on process: {}", getpid());
+                    LOG_DEBUG(task_logger, "{} task: Running on process: {}", task_name, getpid());
+                    LOG_INFO(task_file_logger, "{} task: Running on process: {}", task_name, getpid());
 
 
                     try {
@@ -151,8 +146,8 @@ namespace task {
                         git.pull();
                         
                     } catch(std::exception &e){
-                        LOG_CRITICAL(logger, "Git -> Articles update task: Encountered critical error: {}. Restarting.", e.what());
-                        LOG_CRITICAL(file_logger, "Git -> Articles update task: Encountered critical error: {}. Restarting.", e.what());
+                        LOG_CRITICAL(task_logger, "{} task: Encountered critical error: {}. Restarting.", task_name, e.what());
+                        LOG_CRITICAL(task_file_logger, "{} task: Encountered critical error: {}. Restarting.", task_name, e.what());
                     }
                     
                 };
@@ -163,6 +158,9 @@ namespace task {
             private:
                 RepoConfig repo_config;
                 Git git;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }

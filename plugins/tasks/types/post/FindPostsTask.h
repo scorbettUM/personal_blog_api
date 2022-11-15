@@ -35,8 +35,13 @@ namespace task {
         class FindPostsTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 FindPostsTask():
-                    Subscribable(
-                        "find_posts"
+                    Subscribable<std::string, std::pair<task::types::PostAction, std::string>>(
+                        "find_posts",
+                        100,
+                        1,
+                        std::vector<std::string>{
+                            "load_posts"
+                        }
                     ),
                     posts_mapper(drogon::app().getDbClient())
                 {
@@ -45,8 +50,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("find_posts", "blog.jobs.log");
 
                     repo_path = config["repo_path"].asString();
                     auto env_repo_path = getenv("REPO_PATH");
@@ -69,6 +74,9 @@ namespace task {
                         repo_path = env_repo_path;
 
                     }
+
+                    LOG_DEBUG(task_logger, "Initializing {} task. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "Initializing {} task. Please wait...", task_name);
 
                 };
                 void run(){
@@ -119,8 +127,8 @@ namespace task {
 
                     }
 
-                    LOG_DEBUG(logger, "Markdown -> HTML converter task: Discovered: {} new articles.", discovered_articles);
-                    LOG_INFO(file_logger, "Markdown -> HTML converter task: Discovered: {} new articles.", discovered_articles);
+                    LOG_DEBUG(task_logger, "{} task: Discovered: {} new articles.", task_name, discovered_articles);
+                    LOG_INFO(task_file_logger, "{} task: Discovered: {} new articles.", task_name, discovered_articles);
 
                     discovered_articles = 0;
 
@@ -128,8 +136,14 @@ namespace task {
 
                 void stop(){
 
+                    LOG_DEBUG(task_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+
                 };
                 void complete(){
+
+                    LOG_DEBUG(task_logger, "{} task has completed.", task_name);
+                    LOG_INFO(task_file_logger, "{} task has completed.", task_name);
 
                 };
                 void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
@@ -146,6 +160,9 @@ namespace task {
                 
                 drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }

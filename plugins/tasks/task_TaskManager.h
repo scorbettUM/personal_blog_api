@@ -35,7 +35,6 @@ class TaskManager : public drogon::Plugin<TaskManager>
 
   private:
     task::TaskGroup<task::types::BaseTask> task_group;
-    std::vector<std::shared_ptr<task::types::BaseTask>> tasks;
 };
 
 }

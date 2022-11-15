@@ -14,40 +14,29 @@ void TaskManager::initAndStart(const Json::Value &config)
 {
     /// Initialize and start the plugin
 
-    auto find_posts = std::make_shared<FindPostsTask>(FindPostsTask());
-    auto load_posts = std::make_shared<LoadPostsTask>(LoadPostsTask());
-    auto save_posts = std::make_shared<SavePostsTask>(SavePostsTask());
-    auto find_metadata = std::make_shared<FindMetadataTask>(FindMetadataTask());
-    auto load_metadata = std::make_shared<LoadMetadataTask>(LoadMetadataTask());
-    auto save_tags = std::make_shared<SaveTagsTask>(SaveTagsTask());
-    auto save_categories = std::make_shared<SaveCategoriesTask>(SaveCategoriesTask());
-    auto pull_updates = std::make_shared<PullUpdates>(PullUpdates());
-
-    tasks.push_back(find_posts);
-    tasks.push_back(load_posts);
-    tasks.push_back(save_posts);
-    tasks.push_back(find_metadata);
-    tasks.push_back(load_metadata);
-    tasks.push_back(save_tags);
-    tasks.push_back(save_categories);
-
-    find_posts->subscribe(load_posts);
-    load_posts->subscribe(save_posts);
-    save_posts->subscribe(find_metadata);
-    find_metadata->subscribe(load_metadata);
-    load_metadata->subscribe(save_tags);
-    load_metadata->subscribe(save_categories);
-
     task_group.parseConfig(config);
 
+    auto registry = TaskRegistry<Subscribable<std::string, std::pair<task::types::PostAction, std::string>>>(
+        std::make_shared<FindPostsTask>(FindPostsTask()),
+        std::make_shared<LoadPostsTask>(LoadPostsTask()),
+        std::make_shared<SavePostsTask>(SavePostsTask()),
+        std::make_shared<FindMetadataTask>(FindMetadataTask()),
+        std::make_shared<LoadMetadataTask>(LoadMetadataTask()),
+        std::make_shared<SaveTagsTask>(SaveTagsTask()),
+        std::make_shared<SaveCategoriesTask>(SaveCategoriesTask())
+    );
+
+    for (auto &task: registry.iter()){
+        for (auto &dependent : task->task_dependents){
+            task->subscribe(registry.get(dependent));
+        }
+
+        task_group.addTask(std::move(task));
+
+    }
+
+    auto pull_updates = std::make_shared<PullUpdates>(PullUpdates());
     task_group.addTask(pull_updates);
-    task_group.addTask(find_posts);
-    task_group.addTask(load_posts);
-    task_group.addTask(save_posts);
-    task_group.addTask(find_metadata);
-    task_group.addTask(load_metadata);
-    task_group.addTask(save_tags);
-    task_group.addTask(save_categories);
 
     task_group.runStaggered();
 }

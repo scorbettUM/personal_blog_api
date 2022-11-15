@@ -36,8 +36,14 @@ namespace task {
         class LoadMetadataTask : public Subscribable<std::string, std::pair<task::types::PostAction, std::string>> {
             public:
                 LoadMetadataTask():
-                    Subscribable(
-                        "load_metadata"
+                    Subscribable<std::string, std::pair<task::types::PostAction, std::string>>(
+                        "load_metadata",
+                        100,
+                        5,
+                        std::vector<std::string>{
+                            "save_tags",
+                            "save_categories"
+                        }
                     )
                 {
 
@@ -45,9 +51,11 @@ namespace task {
 
                 void initialize(Json::Value config){
 
-                    logger = logger_factory.createConsoleLogger("console");
-                    file_logger = logger_factory.createFileLogger("markdown_job", "blog.posts.job.log");
+                    task_logger = logger_factory.createConsoleLogger("console");
+                    task_file_logger = logger_factory.createFileLogger("load_metadata", "blog.jobs.log");
 
+                    LOG_DEBUG(task_logger, "Initializing {} task. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "Initializing {} task. Please wait...", task_name);
 
                 };
 
@@ -59,14 +67,17 @@ namespace task {
                     int cache_idx = 0;
                     std::vector<std::string> processed;
 
-                    for (const auto &filepath : cache.iter()){
+                    for (std::string &filepath : cache.iter()){
 
                         auto cache_item = cache.get(filepath).value();
+                        auto metadata_filepath = std::filesystem::path(filepath);
 
-                        auto metadata_filename = std::filesystem::path(filepath).filename().string();
+                        auto metadata_filename = metadata_filepath.filename().string();
 
 
                         auto cache_action = metadata_filename.find(tags_ext) != std::string::npos ? PostAction::SAVE_TAGS : PostAction::SAVE_CATEGORIES;
+
+                        std::cout<<filepath<<std::endl;
 
                         if (cache_item.first == PostAction::LOAD_METADATA){
 
@@ -74,8 +85,11 @@ namespace task {
                             std::ifstream ifs(filepath);       // note no mode needed
 
                             if ( !ifs.is_open() ) { 
-                                LOG_WARNING(logger, "Markdown -> HTML converter task: Failed to open tags file at: {}", filepath);  
-                                LOG_WARNING(file_logger, "Markdown -> HTML converter task: Failed to open tags file at: {}", filepath);   
+
+                                error_filepath = metadata_filepath.string();
+                                
+                                LOG_WARNING(task_logger, "{} task: Failed to open metadata file at: {}", task_name, error_filepath);  
+                                LOG_WARNING(task_file_logger, "{} task: Failed to open metadata file at: {}", task_name, error_filepath);   
 
                             }
                             else {
@@ -120,16 +134,22 @@ namespace task {
                     }
 
 
-                    LOG_DEBUG(logger, "Markdown -> HTML converter task: Loaded: {} new metadata files.", metadata_files_loaded);
-                    LOG_INFO(file_logger, "Markdown -> HTML converter task: Loaded: {} new metadata files.", metadata_files_loaded);
+                    LOG_DEBUG(task_logger, "{} task: Loaded: {} new metadata files.", task_name, metadata_files_loaded);
+                    LOG_INFO(task_file_logger, "{} task: Loaded: {} new metadata files.", task_name, metadata_files_loaded);
                     metadata_files_loaded = 0;
 
                 };
 
                 void stop(){
 
+                    LOG_DEBUG(task_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+                    LOG_INFO(task_file_logger, "{} task has been notified of shutdown. Please wait...", task_name);
+
                 };
                 void complete(){
+
+                    LOG_DEBUG(task_logger, "{} task has completed.", task_name);
+                    LOG_INFO(task_file_logger, "{} task has completed.", task_name);
 
                 };
                 void receive(std::string key, std::pair<task::types::PostAction, std::string> value){
@@ -142,7 +162,11 @@ namespace task {
             private:
 
                 int metadata_files_loaded = 0;
+                std::string error_filepath;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
+                utilities::logging::LoggerFactory logger_factory;
+                quill::Logger *task_logger;
+                quill::Logger *task_file_logger;
         };
 
     }
