@@ -93,7 +93,7 @@ Task<HttpResponsePtr> Tags::list(HttpRequestPtr req) {
         
     } catch(std::exception& e) {
 
-        data["posts"] = Json::Value(Json::arrayValue);
+        data["tags"] = Json::Value(Json::arrayValue);
         data["error"] = e.what();
         auto resp=HttpResponse::newHttpJsonResponse(data);
         resp->setStatusCode(k404NotFound);

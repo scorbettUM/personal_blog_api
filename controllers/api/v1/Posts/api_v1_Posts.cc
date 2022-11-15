@@ -129,6 +129,7 @@ Task<HttpResponsePtr> Posts::getByTags(HttpRequestPtr req, std::string tags) {
     }
 
     auto posts_sort_order = req->getOptionalParameter<std::string>("sort_order").value_or("DESC");
+    auto posts_filter_type = req->getOptionalParameter<std::string>("filter_type").value_or("INCLUDING");
     auto page = req->getOptionalParameter<int>("page").value_or(1);
     auto limit = req->getOptionalParameter<int>("limit").value_or(5);
 
@@ -159,12 +160,33 @@ Task<HttpResponsePtr> Posts::getByTags(HttpRequestPtr req, std::string tags) {
         ).get();
 
         std::vector<std::string> posts_ids;
+        std::map<std::string, size_t> tag_count;
 
         for (const auto &tag : matched_tags){
             auto tag_json = tag.toJson();
-            posts_ids.push_back(
-                tag_json["post"].asString()
-            );
+
+            std::string post_id = tag_json["post"].asString();
+            posts_ids.push_back(post_id);
+
+            if (!tag_count[post_id]){
+                tag_count[post_id] = 1;
+            } else {
+                tag_count[post_id] += 1;
+            }
+
+        }
+        
+        std::vector<std::string> filtered_post_ids;
+        if (posts_filter_type == "MATCHING"){
+            for (auto &[post_id, count] : tag_count){
+
+                if (count == matched_tags.size()){
+                    filtered_post_ids.push_back(post_id);
+                }
+
+            }
+
+            posts_ids = filtered_post_ids;
 
         }
 
@@ -356,6 +378,7 @@ Task<HttpResponsePtr> Posts::getByCategories(HttpRequestPtr req, std::string cat
     }
 
     auto posts_sort_order = req->getOptionalParameter<std::string>("sort_order").value_or("DESC");
+    auto posts_filter_type = req->getOptionalParameter<std::string>("filter_type").value_or("INCLUDING");
     auto page = req->getOptionalParameter<int>("page").value_or(1);
     auto limit = req->getOptionalParameter<int>("limit").value_or(5);
 
@@ -386,12 +409,33 @@ Task<HttpResponsePtr> Posts::getByCategories(HttpRequestPtr req, std::string cat
         ).get();
 
         std::vector<std::string> posts_ids;
+        std::map<std::string, size_t> category_count;
 
         for (const auto &category : matched_categories){
             auto category_json = category.toJson();
-            posts_ids.push_back(
-                category_json["post"].asString()
-            );
+
+            std::string post_id = category_json["post"].asString();
+            posts_ids.push_back(post_id);
+
+            if (!category_count[post_id]){
+                category_count[post_id] = 1;
+            } else {
+                category_count[post_id] += 1;
+            }
+
+        }
+
+        std::vector<std::string> filtered_post_ids;
+        if (posts_filter_type == "MATCHING"){
+            for (auto &[post_id, count] : category_count){
+
+                if (count == matched_categories.size()){
+                    filtered_post_ids.push_back(post_id);
+                }
+
+            }
+
+            posts_ids = filtered_post_ids;
 
         }
 

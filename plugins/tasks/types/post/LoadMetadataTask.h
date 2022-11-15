@@ -77,8 +77,6 @@ namespace task {
 
                         auto cache_action = metadata_filename.find(tags_ext) != std::string::npos ? PostAction::SAVE_TAGS : PostAction::SAVE_CATEGORIES;
 
-                        std::cout<<filepath<<std::endl;
-
                         if (cache_item.first == PostAction::LOAD_METADATA){
 
                             std::stringstream buffer;

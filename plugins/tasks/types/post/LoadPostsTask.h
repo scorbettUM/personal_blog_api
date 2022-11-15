@@ -80,8 +80,6 @@ namespace task {
                             auto path = std::filesystem::path(filepath);
                             std::string file_type = path.extension();
 
-                            std::cout<<filepath<<std::endl;
-
                             if ( !ifs.is_open() ) { 
 
                                 error_filepath = path.string();
