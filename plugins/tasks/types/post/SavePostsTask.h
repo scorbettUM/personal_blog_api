@@ -42,13 +42,14 @@ namespace task {
                         std::vector<std::string>{
                             "find_metadata"
                         }
-                    ),
-                    posts_mapper(drogon::app().getDbClient())
+                    )
                 {
 
                 }
 
                 void initialize(Json::Value config){
+
+                    (void)config;
 
                     task_logger = logger_factory.createConsoleLogger("console");
                     task_file_logger = logger_factory.createFileLogger("save_posts", "blog.jobs.log");
@@ -61,6 +62,9 @@ namespace task {
 
                     int cache_idx = 0;
                     std::vector<std::string> processed;
+
+                    auto db = drogon::app().getDbClient();
+                    drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
 
                     for (std::string &filepath : cache.iter()){
 
@@ -108,7 +112,7 @@ namespace task {
                     }
 
                     LOG_DEBUG(task_logger, "{} task: Saved: {} new articles.", task_name, save_count);
-                    LOG_INFO(task_file_logger, "{} task: Saved: {} new articles.", task_name, save_count); 
+                    LOG_DEBUG(task_file_logger, "{} task: Saved: {} new articles.", task_name, save_count); 
 
                     save_count = 0;
 
@@ -138,7 +142,6 @@ namespace task {
                 int save_count = 0;
                 std::string repo_path;
                 
-                drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
                 utilities::logging::LoggerFactory logger_factory;
                 quill::Logger *task_logger;

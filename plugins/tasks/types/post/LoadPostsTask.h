@@ -50,6 +50,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
+                    (void)config;
+
                     task_logger = logger_factory.createConsoleLogger("console");
                     task_file_logger = logger_factory.createFileLogger("load_posts", "blog.jobs.log");
 
@@ -128,7 +130,7 @@ namespace task {
 
 
                     LOG_DEBUG(task_logger, "{} task: Loaded: {} new articles.", task_name, loaded_count);
-                    LOG_INFO(task_file_logger, "{} task: Loaded: {} new articles.", task_name, loaded_count);
+                    LOG_DEBUG(task_file_logger, "{} task: Loaded: {} new articles.", task_name, loaded_count);
 
                     loaded_count = 0;
 

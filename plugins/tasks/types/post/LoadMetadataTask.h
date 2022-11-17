@@ -51,6 +51,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
+                    (void)config;
+
                     task_logger = logger_factory.createConsoleLogger("console");
                     task_file_logger = logger_factory.createFileLogger("load_metadata", "blog.jobs.log");
 
@@ -133,7 +135,7 @@ namespace task {
 
 
                     LOG_DEBUG(task_logger, "{} task: Loaded: {} new metadata files.", task_name, metadata_files_loaded);
-                    LOG_INFO(task_file_logger, "{} task: Loaded: {} new metadata files.", task_name, metadata_files_loaded);
+                    LOG_DEBUG(task_file_logger, "{} task: Loaded: {} new metadata files.", task_name, metadata_files_loaded);
                     metadata_files_loaded = 0;
 
                 };

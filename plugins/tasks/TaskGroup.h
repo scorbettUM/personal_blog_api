@@ -56,7 +56,6 @@ namespace task {
                 task_idx += 1;
             }
 
-
             void runStaggered(){
 
                 run_tasks = true;
@@ -90,17 +89,17 @@ namespace task {
         
                         while (run_tasks){
                             
-                            try
-                            { 
+                            try { 
+
                                 group_task->run();
+
                             }
-                            catch(const std::exception& e)
-                            {
+                            catch(const std::exception& e) {
+
                                 LOG_CRITICAL(logger, "Encountered error running task {} - {}", group_task->task_name, e.what());
                                 LOG_CRITICAL(file_logger, "Encountered error running task {} - {}", group_task->task_name, e.what());
+
                             }
-                            
-                
 
                             runner_conditional.wait_for(
                                 lock, 

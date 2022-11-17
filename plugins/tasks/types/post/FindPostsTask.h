@@ -39,19 +39,18 @@ namespace task {
                         "find_posts",
                         100,
                         1,
-                        std::vector<std::string>{
-                            "load_posts"
-                        }
-                    ),
-                    posts_mapper(drogon::app().getDbClient())
+                        std::vector<std::string>{}
+                    )
                 {
 
                 }
 
                 void initialize(Json::Value config){
 
+                    (void)config;
+
                     task_logger = logger_factory.createConsoleLogger("console");
-                    task_file_logger = logger_factory.createFileLogger("find_posts", "blog.jobs.log");
+                    task_file_logger = logger_factory.createFileLogger("find_metadata", "blog.jobs.log");
 
                     repo_path = config["repo_path"].asString();
                     auto env_repo_path = getenv("REPO_PATH");
@@ -83,6 +82,9 @@ namespace task {
 
                     std::string md_post_ext(".post.md");
                     std::string html_post_ext(".post.html");
+
+                    auto db = drogon::app().getDbClient();
+                    drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper(db);
                         
                     for (auto &file : std::filesystem::recursive_directory_iterator(repo_path))
                     {
@@ -158,7 +160,6 @@ namespace task {
                 int discovered_articles = 0;
                 std::string repo_path;
                 
-                drogon::orm::Mapper<drogon_model::sqlite3::Posts> posts_mapper;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
                 utilities::logging::LoggerFactory logger_factory;
                 quill::Logger *task_logger;

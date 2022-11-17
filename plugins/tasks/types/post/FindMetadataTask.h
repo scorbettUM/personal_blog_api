@@ -52,6 +52,8 @@ namespace task {
 
                 void initialize(Json::Value config){
 
+                    (void)config;
+
                     task_logger = logger_factory.createConsoleLogger("console");
                     task_file_logger = logger_factory.createFileLogger("find_metadata", "blog.jobs.log");
 
@@ -129,7 +131,7 @@ namespace task {
                     }
 
                     LOG_DEBUG(task_logger, "{} task: Discovered: {} new metadata files.", task_name, metadata_files_discovered);
-                    LOG_INFO(task_file_logger, "{} task: Discovered: {} new metadata files.", task_name, metadata_files_discovered);
+                    LOG_DEBUG(task_file_logger, "{} task: Discovered: {} new metadata files.", task_name, metadata_files_discovered);
 
                     metadata_files_discovered = 0; 
 

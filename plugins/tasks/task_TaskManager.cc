@@ -16,6 +16,9 @@ void TaskManager::initAndStart(const Json::Value &config)
 
     task_group.parseConfig(config);
 
+    auto pull_updates = std::make_shared<PullUpdates>(PullUpdates());
+    task_group.addTask(pull_updates);
+
     auto registry = TaskRegistry<Subscribable<std::string, std::pair<task::types::PostAction, std::string>>>(
         std::make_shared<FindPostsTask>(FindPostsTask()),
         std::make_shared<LoadPostsTask>(LoadPostsTask()),
@@ -34,9 +37,6 @@ void TaskManager::initAndStart(const Json::Value &config)
         task_group.addTask(std::move(task));
 
     }
-
-    auto pull_updates = std::make_shared<PullUpdates>(PullUpdates());
-    task_group.addTask(pull_updates);
 
     task_group.runStaggered();
 }

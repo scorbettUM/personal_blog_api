@@ -8,7 +8,7 @@ ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update -yqq \
-    && apt-get install -yqq --no-install-recommends apt-utils software-properties-common \
+    && apt-get install -yqq --no-install-recommends apt-utils software-properties-common libcrypto \
     sudo curl wget cmake make pkg-config locales git gcc-11 g++-11 \
     openssl libssl-dev libjsoncpp-dev uuid-dev zlib1g-dev libc-ares-dev\
     postgresql-server-dev-all default-libmysqlclient-dev libsqlite3-dev libhiredis-dev doxygen\
@@ -84,7 +84,7 @@ ENV DROGON_CONFIG_PATH=/home/drogon/config.json \
     REPO_URL=REPO_URL
 
 RUN apt-get update -yqq \
-    && apt-get install -yqq --no-install-recommends apt-utils software-properties-common \
+    && apt-get install -yqq --no-install-recommends apt-utils software-properties-common libcrypto \
     openssl libssl-dev libjsoncpp-dev uuid-dev zlib1g-dev libc-ares-dev\
     postgresql-server-dev-all default-libmysqlclient-dev libsqlite3-dev libhiredis-dev doxygen\
     && rm -rf /var/lib/apt/lists/*
@@ -92,4 +92,4 @@ RUN apt-get update -yqq \
 COPY --from=drogon_build /home/drogon/ /home/drogon/
 
 
-CMD [ "/home/drogon/build/personal_blog_api" ]
+CMD [ "/home/drogon/build/personal_blog_api", "run" ]

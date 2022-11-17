@@ -51,30 +51,31 @@ void DatabaseManager::initAndStart(const Json::Value &config)
             LOG_CRITICAL(logger, "Err. - could not create or connect database file at {}", api_database_path);
             LOG_CRITICAL(file_logger, "Err. - could not create or connect database file at {}", api_database_path);
         }
+
+        database_file.close();
     }
 
     TableTypes app_tables;
 
     for (const auto &table : app_tables.tables){
 
-        db->execSqlAsync(table.second, [&](const drogon::orm::Result &result) {
+        drogon::async_run([&]() -> Task<> {
 
-            assert(result.size() == 0);
+            try{
+                co_await db->execSqlCoro(table.second);
 
+            }
+            catch(const std::exception& error){
 
-        }, [&](const drogon::orm::DrogonDbException &db_error) {
-            const auto exception = db_error.base();
-
-            LOG_CRITICAL(logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
-            LOG_CRITICAL(file_logger, "Encountered error creating or connecting to Posts table: {}", exception.what());
-
+                LOG_CRITICAL(logger, "Encountered error creating or connecting to Posts table: {}", error.what());
+                LOG_CRITICAL(file_logger, "Encountered error creating or connecting to Posts table: {}", error.what());
+            }
+            
         });
 
         LOG_INFO(logger, "Successfully created or connected to {} table.", table.first);
         LOG_INFO(file_logger, "Successfully created or connected to {} table.", table.first);
     }
-    
-
 
 }
 

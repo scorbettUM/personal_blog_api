@@ -40,13 +40,14 @@ namespace task {
                         100,
                         6,
                         std::vector<std::string>{}
-                    ),
-                    tags_mapper(drogon::app().getDbClient())
+                    )
                 {
 
                 }
 
                 void initialize(Json::Value config){
+
+                    (void)config;
 
                     task_logger = logger_factory.createConsoleLogger("console");
                     task_file_logger = logger_factory.createFileLogger("save_tags", "blog.jobs.log");
@@ -59,6 +60,8 @@ namespace task {
                     
                     int cache_idx = 0;
                     std::vector<std::string> processed;
+                    auto db = drogon::app().getDbClient();
+                    drogon::orm::Mapper<drogon_model::sqlite3::Tags> tags_mapper(db);
 
                     for (std::string &metadata_content : cache.iter()){
 
@@ -101,7 +104,7 @@ namespace task {
                     }
 
                     LOG_DEBUG(task_logger, "{} task: Saved: {} new tags.", task_name, tags_saved);
-                    LOG_INFO(task_file_logger, "{} task: Saved: {} new tags.", task_name, tags_saved);
+                    LOG_DEBUG(task_file_logger, "{} task: Saved: {} new tags.", task_name, tags_saved);
 
                     tags_saved = 0;
 
@@ -129,8 +132,6 @@ namespace task {
 
             private:
                 int tags_saved = 0;
-                
-                drogon::orm::Mapper<drogon_model::sqlite3::Tags> tags_mapper;
                 utilities::cache::QuickStore<std::string, std::pair<task::types::PostAction, std::string>> cache;
                 utilities::logging::LoggerFactory logger_factory;
                 quill::Logger *task_logger;
